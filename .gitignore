@@ -1,0 +1,34 @@
+# Unity
+Library/
+Temp/
+Obj/
+Build/
+UserSettings/
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Rider / VSCode / JetBrains
+.vscode/
+.idea/
+*.sln
+*.csproj
+*.unityproj
+*.user
+*.pidb
+*.booproj
+*.svd

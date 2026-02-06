@@ -1,0 +1,20 @@
+{
+    "asset": "1f98c9a44add59747b798a189590a240",
+    "fileName": "019ad603-7d53-70d4-8103-82be245c840a.jpg",
+    "prompt": "extend the background art",
+    "negativePrompt": "",
+    "model": "6e225f1b-e6dc-4e6f-ac12-7d681672c889",
+    "modelName": "Environment Sprites",
+    "customSeed": -1,
+    "w3CTraceId": "820afdc5d846ad4b170e3bd6b7539890",
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": []
+    },
+    "upscaleFactor": 0
+}

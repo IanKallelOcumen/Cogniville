@@ -1,0 +1,258 @@
+fileFormatVersion: 2
+guid: e35b76fbb64468b439ea1424a456b281
+labels:
+- UnityAI
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8777231767082875644
+    second: Gemini_Generated_Image_w3m1dfw3m1dfw3m1_0
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Gemini_Generated_Image_w3m1dfw3m1dfw3m1_0
+      rect:
+        serializedVersion: 2
+        x: 242
+        y: 219
+        width: 708
+        height: 445
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline:
+      - - {x: -354, y: 222.5}
+        - {x: -354, y: -199.5}
+        - {x: -312, y: -222.5}
+        - {x: 291, y: -222.5}
+        - {x: 354, y: -192.5}
+        - {x: 354, y: 222.5}
+      physicsShape:
+      - - {x: 139, y: -216.5}
+        - {x: 168, y: -212.5}
+        - {x: 215, y: -205.5}
+        - {x: 224, y: -202.5}
+        - {x: 250, y: -195.5}
+        - {x: 265, y: -190.5}
+        - {x: 277, y: -185.5}
+        - {x: 301, y: -173.5}
+        - {x: 316, y: -162.5}
+        - {x: 333, y: -144.5}
+        - {x: 338, y: -137.5}
+        - {x: 346, y: -121.5}
+        - {x: 351, y: -105.5}
+        - {x: 353, y: -97.5}
+        - {x: 354, y: -84.5}
+        - {x: 354, y: -77.5}
+        - {x: 353, y: -64.5}
+        - {x: 348, y: -44.5}
+        - {x: 345, y: -36.5}
+        - {x: 338, y: -21.5}
+        - {x: 332, y: -13.5}
+        - {x: 325, y: -4.5}
+        - {x: 320, y: 1.5}
+        - {x: 312, y: 11.5}
+        - {x: 298, y: 38.5}
+        - {x: 295, y: 46.5}
+        - {x: 286, y: 66.5}
+        - {x: 279, y: 79.5}
+        - {x: 273, y: 89.5}
+        - {x: 258, y: 110.5}
+        - {x: 244, y: 126.5}
+        - {x: 230, y: 139.5}
+        - {x: 220, y: 149.5}
+        - {x: 207, y: 159.5}
+        - {x: 191, y: 170.5}
+        - {x: 181, y: 176.5}
+        - {x: 148, y: 192.5}
+        - {x: 143, y: 194.5}
+        - {x: 122, y: 202.5}
+        - {x: 113, y: 205.5}
+        - {x: 100, y: 209.5}
+        - {x: 79, y: 214.5}
+        - {x: 50, y: 219.5}
+        - {x: 41, y: 220.5}
+        - {x: 29, y: 221.5}
+        - {x: 9, y: 222.5}
+        - {x: -8, y: 222.5}
+        - {x: -29, y: 221.5}
+        - {x: -55, y: 219.5}
+        - {x: -67, y: 217.5}
+        - {x: -94, y: 211.5}
+        - {x: -118, y: 203.5}
+        - {x: -147, y: 193.5}
+        - {x: -167, y: 183.5}
+        - {x: -195, y: 165.5}
+        - {x: -211, y: 153.5}
+        - {x: -240, y: 124.5}
+        - {x: -252, y: 111.5}
+        - {x: -260, y: 99.5}
+        - {x: -271, y: 83.5}
+        - {x: -283, y: 59.5}
+        - {x: -290, y: 43.5}
+        - {x: -295, y: 28.5}
+        - {x: -304, y: 2.5}
+        - {x: -319, y: -19.5}
+        - {x: -326, y: -26.5}
+        - {x: -338, y: -43.5}
+        - {x: -347, y: -62.5}
+        - {x: -350, y: -71.5}
+        - {x: -353, y: -84.5}
+        - {x: -353, y: -114.5}
+        - {x: -349, y: -128.5}
+        - {x: -338, y: -146.5}
+        - {x: -327, y: -159.5}
+        - {x: -311, y: -170.5}
+        - {x: -289, y: -181.5}
+        - {x: -280, y: -185.5}
+        - {x: -269, y: -189.5}
+        - {x: -250, y: -195.5}
+        - {x: -221, y: -202.5}
+        - {x: -211, y: -205.5}
+        - {x: -169, y: -211.5}
+        - {x: -152, y: -213.5}
+        - {x: -121, y: -216.5}
+        - {x: -103, y: -217.5}
+        - {x: -83, y: -218.5}
+        - {x: -56, y: -219.5}
+        - {x: -31, y: -220.5}
+        - {x: -4, y: -221.5}
+        - {x: 70, y: -221.5}
+        - {x: 102, y: -219.5}
+        - {x: 116, y: -218.5}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40540cb2632013680800000000000000
+      internalID: -8777231767082875644
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 596a0076c796e97499ac349a466af72f
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: com.unity.2d.enhancers.customdata
+        value: '{"selectedArtifact":"D:\\Unity Projects\\Jhiro\\GeneratedAssets\\e35b76fbb64468b439ea1424a456b281\\019ad5fd-1d44-7206-b0fd-2925ef360575.png"}'
+    nameFileIdTable:
+      Gemini_Generated_Image_w3m1dfw3m1dfw3m1_0: -8777231767082875644
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
