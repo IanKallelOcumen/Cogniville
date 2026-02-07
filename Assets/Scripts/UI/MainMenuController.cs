@@ -524,6 +524,7 @@ public class MainMenuController : MonoBehaviour
         
         // Wire context-specific buttons
         TryBind("ContinueButton", OnContinueFromName);
+        TryBind("EnterButton", OnContinueFromName); // For PanelName
         TryBind("SessionButton", OnSession);
         TryBind("ResultsButton", OnResults);
 
