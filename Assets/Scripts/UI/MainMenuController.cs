@@ -149,13 +149,10 @@ public class MainMenuController : MonoBehaviour
     
     public void OnLogin()
     {
-        Log("OnLogin clicked");
-        if (!panelLogin) { Err("panelLogin is NULL"); return; }
-        if (_current == panelLogin) return;
-        StartFade(_current, panelLogin);
-        
-        // Focus input field when panel shows
-        StartCoroutine(FocusInputFieldDelayed(panelLogin));
+        Log("OnLogin clicked -> Fade to ResultsScreen (dummy)");
+        if (!resultsScreen) { Err("resultsScreen is NULL"); return; }
+        if (_current == resultsScreen) return;
+        StartFade(_current, resultsScreen);
     }
     
     public void OnContinueFromName()
