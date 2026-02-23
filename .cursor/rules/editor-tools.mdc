@@ -1,0 +1,11 @@
+---
+description: When to use Cursor tools and editor menus
+alwaysApply: true
+---
+
+# Making changes easier
+
+- **Bulk UI font / button scale:** In Unity, use **Tools > Cogniville** (see `Assets/Scripts/Editor/CognivilleUIMenu.cs`): apply UI font to selection or all input fields; set all buttons hover scale 1.1 or press scale 1. Run from the Editor; no need to edit scene YAML by hand for these.
+- **Search:** Use **grep** for exact symbols (e.g. `PrincipalButton`, `SetGameResults`); use **codebase_search** for “where is X done?” or “how does Y work?”
+- **Scene edits:** Prefer editing `.unity` YAML only when necessary (e.g. fixing script GUIDs, adding new refs). For adding GameObjects or components, prefer instructing the user to do it in Unity and then wiring in code, or provide exact YAML blocks if the user wants file edits.
+- **Logs:** Don’t commit `Logs/` or `Assets/debug-*.log`; exclude them from git.

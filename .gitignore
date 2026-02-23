@@ -3,6 +3,7 @@ Library/
 Temp/
 Obj/
 Build/
+Builds/
 UserSettings/
 *.csproj
 *.unityproj
@@ -17,13 +18,16 @@ UserSettings/
 *.opendb
 *.VC.db
 
+# Unity logs and debug (do not commit)
+Logs/
+Assets/debug-*.log
+Assets/debug-*.log.meta
 
 # OS junk
 .DS_Store
 Thumbs.db
 
-# Rider / VSCode / JetBrains
-.vscode/
+# JetBrains only (keep .vscode for workspace recommendations)
 .idea/
 *.sln
 *.csproj

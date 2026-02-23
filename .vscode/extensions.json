@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.vscode-dotnet-runtime",
+    "redhat.vscode-yaml",
+    "rankupgames.unity-cursor-toolkit",
+    "YclepticStudios.unity-snippets"
+  ],
+  "unwantedRecommendations": []
+}

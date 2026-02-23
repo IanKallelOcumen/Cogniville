@@ -1,0 +1,13 @@
+---
+description: Unity C# and scene conventions for Cogniville
+globs: Assets/Scripts/**/*.cs,Assets/Scenes/**/*.unity
+alwaysApply: false
+---
+
+# Unity / C# Conventions
+
+- **Singleton:** `GameDataManager.Instance`, `FirebaseBackend.Instance` — check for null before use (e.g. in battle scene after load).
+- **Scene refs:** MainMenuController holds refs to panels (panelName, panelLogin, panelPrincipal, resultsScreen); panelPrincipal GameObject name in scene is under Canvas (PanelPrincipal). Results screen is PanelResult in hierarchy; MainMenuController.nameResultsScreen = "ResultsScreen" but ref is assigned in scene.
+- **Find:** Prefer `FindFirstObjectByType<T>()` (Unity 2021.3+) over deprecated `FindObjectOfType<T>()`; fallback for older Unity with `#if UNITY_2023_1_OR_NEWER`.
+- **Scene YAML:** Script refs use `m_Script: {fileID: 11500000, guid: <asset-guid>, type: 3}`. GUIDs that parse as numbers can break; use a guid starting with a letter (e.g. `a3c4e5f6...`) in .meta if needed. Don’t quote guid in scene unless necessary.
+- **TMP_InputField:** Must have Text and Placeholder assigned (TMP_Text children); otherwise input works in code but nothing draws. Use Tools > Cogniville > Apply UI font to all input fields to standardize font/size.

@@ -1,0 +1,26 @@
+---
+description: Cogniville Unity project context and key conventions
+alwaysApply: true
+---
+
+# Cogniville Project
+
+Unity 2D game (C#). Main flows: main menu → student name (PanelName) → book select → world/level → quiz battle → back to menu → results.
+
+## Key paths
+- **Scenes:** `Assets/Scenes/MainMenu.unity`, `WorldSelect.unity`, level scenes (e.g. `IceLevel1`)
+- **Menu/UI:** `Assets/Scripts/UI/MainMenuController.cs`, `Assets/Scripts/UI/Panels/` (PrincipalPanel, ResultsPanel, SessionPanel)
+- **Game data:** `Assets/Scripts/GameDataManager.cs` (singleton, DontDestroyOnLoad): player name, teacher list, session, results, leaderboard
+- **Battle:** `Assets/Scripts/BATTLELOGIC/QuizBattle.cs` — calls `GameDataManager.Instance.SetGameResults(...)` and `BackToMenu()`
+- **Editor helpers:** `Assets/Scripts/Editor/CognivilleUIMenu.cs` — Tools > Cogniville: apply UI font, button hover/press scale
+
+## Panel names (main menu)
+- **PanelName** = student name (before book select). **PanelLogin** = teacher login. **PanelPrincipal** = principal adds teachers. **PanelResult** / ResultsScreen = stats after level. Buttons: PrincipalButton, HomeButton, NextButton, BackButton; MainMenuController binds by name (TryBind) and auto-binds any button whose name contains "back".
+
+## UI consistency
+- **Font:** LiberationSans SDF (guid `8f586378b4e144a9851e7b34d9b748ee`), size 24 for inputs; use Tools > Cogniville to apply.
+- **Buttons:** No shrink — hoverScaleAmount 1.1, scaleOnPress 1 (UIFloat, ButtonFeedback/ButtonPressAnimator).
+- **Principal panel Back:** Bound in MainMenuController after fade to panelPrincipal (Find("BackButton") under panel).
+
+## Teachers
+- GameDataManager: `AddTeacher`, `RemoveTeacher`, `GetTeachers`, `IsAllowedTeacher`. Stored in PlayerPrefs. If list non-empty, only those teachers can log in.
