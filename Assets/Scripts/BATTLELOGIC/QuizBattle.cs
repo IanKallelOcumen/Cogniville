@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;           
+using TMPro;
 using UnityEngine.UI;  
 
 public enum EnemyDifficulty { Easy, Medium, Hard, Boss }
@@ -63,10 +63,22 @@ public class QuizBattle : MonoBehaviour
 
     private Vector3 playerStartPos;
     private Vector3 enemyStartPos;
-    private bool isAnimating = false; 
+    private bool isAnimating = false;
+
+    [Header("--- 6. RESULTS & NAVIGATION ---")]
+    [Tooltip("Scene to load when returning to menu (e.g. MainMenu)")]
+    public string mainMenuSceneName = "MainMenu";
+    [Tooltip("Optional panel or button to show when game ends (Back to Menu)")]
+    public GameObject gameOverPanelOrButton;
+
+    private int _correctCount;
+    private int _totalQuestions;
+    private float _sessionStartTime;
+    private bool _gameEnded; 
 
     void Start()
     {
+        if (enemies == null || enemies.Count == 0) { return; }
         // 1. AUTO-FIX HEARTS
         foreach(Image heart in playerHeartImages) if(heart) heart.preserveAspect = true;
         foreach(Image heart in enemyHeartImages) if(heart) heart.preserveAspect = true;
@@ -91,7 +103,12 @@ public class QuizBattle : MonoBehaviour
             enemyStartPos = enemyObject.position;
         }
 
-        playerHP = playerHeartImages.Length; 
+        playerHP = playerHeartImages.Length;
+        _correctCount = 0;
+        _totalQuestions = 0;
+        _sessionStartTime = Time.time;
+        _gameEnded = false;
+        if (gameOverPanelOrButton) gameOverPanelOrButton.SetActive(false);
         LoadEnemy(0);
     }
 
@@ -168,6 +185,7 @@ public class QuizBattle : MonoBehaviour
                 break;
         }
 
+        _totalQuestions++;
         questionTextUI.text = $"{num1} {symbol} {num2} = ?";
         correctAnsString = correctAns.ToString();
         SetupAnswerButtons(correctAns);
@@ -192,7 +210,8 @@ public class QuizBattle : MonoBehaviour
             options[rnd] = temp;
         }
 
-        for (int i = 0; i < answerButtons.Length; i++)
+        int buttonCount = Mathf.Min(answerButtons.Length, buttonTexts.Length);
+        for (int i = 0; i < buttonCount; i++)
         {
             if (i < options.Count)
             {
@@ -200,6 +219,10 @@ public class QuizBattle : MonoBehaviour
                 answerButtons[i].onClick.RemoveAllListeners();
                 string myAnswer = options[i];
                 answerButtons[i].onClick.AddListener(() => OnAnswerSelected(myAnswer));
+            }
+            else
+            {
+                answerButtons[i].interactable = false;
             }
         }
     }
@@ -220,6 +243,7 @@ public class QuizBattle : MonoBehaviour
         if (chosen == correctAnsString)
         {
             // CORRECT
+            _correctCount++;
             currentEnemyHP--; 
             Vector3 target = enemyStartPos - new Vector3(2.0f, 0, 0); 
             
@@ -357,12 +381,91 @@ public class QuizBattle : MonoBehaviour
 
     void CheckGameState()
     {
-        if (playerHP <= 0) questionTextUI.text = "GAME OVER";
+        if (playerHP <= 0)
+        {
+            questionTextUI.text = "GAME OVER";
+            EndGameSession(false);
+        }
         else if (currentEnemyHP <= 0)
         {
-            if (currentEnemyIndex < enemies.Count - 1) LoadEnemy(currentEnemyIndex + 1);
-            else questionTextUI.text = "VICTORY!";
+            if (currentEnemyIndex < enemies.Count - 1)
+                LoadEnemy(currentEnemyIndex + 1);
+            else
+            {
+                questionTextUI.text = "VICTORY!";
+                EndGameSession(true);
+            }
         }
-        else GenerateMathQuestion();
+        else
+            GenerateMathQuestion();
+    }
+
+    void EndGameSession(bool victory)
+    {
+        if (_gameEnded) return;
+        _gameEnded = true;
+
+        float timeTaken = Time.time - _sessionStartTime;
+        int score = _correctCount * 100;
+        // #region agent log
+        DebugAgent.Log("QuizBattle.cs:EndGameSession", "EndGameSession", "{\"victory\":" + victory + ",\"score\":" + score + ",\"correct\":" + _correctCount + ",\"total\":" + _totalQuestions + ",\"instanceNotNull\":" + (GameDataManager.Instance != null ? "true" : "false") + "}", "E");
+        // #endregion
+        if (GameDataManager.Instance != null)
+            GameDataManager.Instance.SetGameResults(score, _correctCount, _totalQuestions, timeTaken);
+
+        if (gameOverPanelOrButton != null)
+        {
+            gameOverPanelOrButton.SetActive(true);
+            var btn = gameOverPanelOrButton.GetComponent<Button>();
+            if (btn == null) btn = gameOverPanelOrButton.GetComponentInChildren<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(BackToMenu);
+            }
+        }
+        else
+        {
+            CreateBackToMenuButton();
+        }
+    }
+
+    void CreateBackToMenuButton()
+    {
+        var canvas = FindFirstObjectByType<Canvas>();
+        if (canvas == null) return;
+        var go = new GameObject("BackToMenuButton");
+        go.transform.SetParent(canvas.transform, false);
+        var rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.2f);
+        rect.anchorMax = new Vector2(0.5f, 0.2f);
+        rect.sizeDelta = new Vector2(280, 70);
+        rect.anchoredPosition = Vector2.zero;
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0.2f, 0.5f, 0.9f, 0.95f);
+        var btn = go.AddComponent<Button>();
+        btn.targetGraphic = img;
+        btn.onClick.AddListener(BackToMenu);
+        var textGo = new GameObject("Text");
+        textGo.transform.SetParent(go.transform, false);
+        var textRect = textGo.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+        var tmp = textGo.AddComponent<TMPro.TextMeshProUGUI>();
+        tmp.text = "Back to Menu";
+        tmp.fontSize = 28;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+    }
+
+    public void BackToMenu()
+    {
+        if (string.IsNullOrEmpty(mainMenuSceneName)) mainMenuSceneName = "MainMenu";
+        if (SceneFader.Instance != null)
+            SceneFader.FadeToScene(mainMenuSceneName);
+        else
+            UnityEngine.SceneManagement.SceneManager.LoadScene(mainMenuSceneName);
     }
 }

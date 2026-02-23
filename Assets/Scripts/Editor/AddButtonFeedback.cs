@@ -23,7 +23,7 @@ public class AddButtonFeedback : MonoBehaviour
             // Add ButtonFeedback component
             ButtonFeedback feedback = btn.gameObject.AddComponent<ButtonFeedback>();
             feedback.enableSquish = true;
-            feedback.scaleOnPress = 0.95f;
+            feedback.scaleOnPress = 1f;
             
             addedCount++;
             Debug.Log($"Added ButtonFeedback to button: {btn.gameObject.name}");

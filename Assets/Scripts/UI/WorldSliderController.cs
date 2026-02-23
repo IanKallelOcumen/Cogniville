@@ -159,9 +159,17 @@ public class WorldSliderController : MonoBehaviour
 
     void OnPlayPressed(int index)
     {
-        // This is where you load the game level
+        if (index < 0 || index >= worlds.Length) return;
         string sceneToLoad = worlds[index].sceneToLoad;
+        if (string.IsNullOrEmpty(sceneToLoad))
+        {
+            Debug.LogWarning("WorldSliderController: No sceneToLoad set on world index " + index);
+            return;
+        }
         Debug.Log("Loading Level: " + sceneToLoad);
-        // SceneFader.FadeToScene(sceneToLoad);
+        if (SceneFader.Instance != null)
+            SceneFader.FadeToScene(sceneToLoad);
+        else
+            SceneManager.LoadScene(sceneToLoad);
     }
 }

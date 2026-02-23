@@ -35,20 +35,22 @@ public class InputFieldSetup : MonoBehaviour
             // Ensure input is interactable
             input.interactable = true;
             
-            // Set text component properties
+            // Match UI: same font size and colors as rest of menu
             if (input.textComponent != null)
             {
                 input.textComponent.raycastTarget = true;
-                input.textComponent.color = Color.black; // Black text for visibility
+                input.textComponent.color = Color.white;
+                input.textComponent.fontSize = 24;
             }
             
-            // Set placeholder text color (lighter gray)
             if (input.placeholder != null)
             {
-                var placeholderText = input.placeholder.GetComponent<TMP_Text>();
+                var placeholderText = input.placeholder as TMP_Text;
+                if (placeholderText == null) placeholderText = input.placeholder.GetComponent<TMP_Text>();
                 if (placeholderText != null)
                 {
-                    placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f); // Gray placeholder
+                    placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+                    placeholderText.fontSize = 24;
                 }
             }
 

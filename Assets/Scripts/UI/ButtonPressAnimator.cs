@@ -7,8 +7,8 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class ButtonPressAnimator : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    [Tooltip("How small the button gets on press (e.g., 0.9)")]
-    public float scaleOnPress = 0.9f;
+    [Tooltip("Scale on press (1 = no change, 1.05 = 5% bigger)")]
+    public float scaleOnPress = 1f;
 
     private Vector3 _originalScale;
     private ButtonFeedback _feedback;

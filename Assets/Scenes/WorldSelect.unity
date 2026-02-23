@@ -685,7 +685,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adb28d8391e42f44b9441e3987a385b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonPressAnimator
-  scaleOnPress: 0.8
+  scaleOnPress: 1
 --- !u!114 &190102312
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1090,7 +1090,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adb28d8391e42f44b9441e3987a385b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonPressAnimator
-  scaleOnPress: 0.8
+  scaleOnPress: 1
 --- !u!114 &474055056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1754,7 +1754,7 @@ MonoBehaviour:
   bg: {fileID: 0}
   worldItem: {fileID: 1762677424}
   kickAmount: 6
-  scaleOnPress: 0.9
+  scaleOnPress: 1
   enableSquish: 1
 --- !u!1 &1003704569
 GameObject:
@@ -2056,7 +2056,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adb28d8391e42f44b9441e3987a385b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonPressAnimator
-  scaleOnPress: 0.8
+  scaleOnPress: 1
 --- !u!114 &1039452564
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2265,7 +2265,7 @@ MonoBehaviour:
   sceneToLoad: IceLevel1
   progress: 0/5
   startUnlocked: 0
-  worldSaveID: 
+  worldSaveID: World_Jungle 
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   worldSpriteRenderer: {fileID: 1268191139}
   outlineSprite: {fileID: 0}
@@ -2530,7 +2530,7 @@ MonoBehaviour:
   sceneToLoad: IceLevel1
   progress: 0/5
   startUnlocked: 1
-  worldSaveID: 
+  worldSaveID: World_Ice 
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   worldSpriteRenderer: {fileID: 1383682869}
   outlineSprite: {fileID: 0}
@@ -2841,7 +2841,7 @@ MonoBehaviour:
   sceneToLoad: IceLevel1
   progress: 0/5
   startUnlocked: 0
-  worldSaveID: 
+  worldSaveID: World_Fire 
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   worldSpriteRenderer: {fileID: 1762677423}
   outlineSprite: {fileID: 0}
@@ -3357,7 +3357,7 @@ MonoBehaviour:
   bg: {fileID: 0}
   worldItem: {fileID: 1268191140}
   kickAmount: 6
-  scaleOnPress: 0.9
+  scaleOnPress: 1
   enableSquish: 1
 --- !u!1 &1986798810
 GameObject:
@@ -3525,7 +3525,7 @@ MonoBehaviour:
   bg: {fileID: 0}
   worldItem: {fileID: 1383682871}
   kickAmount: 6
-  scaleOnPress: 0.9
+  scaleOnPress: 1
   enableSquish: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

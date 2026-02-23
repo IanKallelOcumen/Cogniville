@@ -162,9 +162,8 @@ public class WorldItem : MonoBehaviour
 
         if (!string.IsNullOrEmpty(sceneToLoad))
         {
-            // Optional: Play a sound here
             Debug.Log($"Loading scene: {sceneToLoad}");
-            SceneManager.LoadScene(sceneToLoad);
+            SceneFader.FadeToScene(sceneToLoad);
         }
         else
         {

@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public class MainMenuController : MonoBehaviour
     public GameObject panelLogin;
     public GameObject panelName;
     public GameObject panelSession;
+    public GameObject panelPrincipal;
     public GameObject resultsScreen; 
 
     [Header("Book Zoom Focus")]
@@ -49,6 +51,7 @@ public class MainMenuController : MonoBehaviour
     public string namePanelLogin = "PanelLogin";
     public string namePanelName = "PanelName";
     public string namePanelSession = "PanelSession";
+    public string namePanelPrincipal = "PanelPrincipal";
     public string nameResultsScreen = "ResultsScreen"; 
     public string nameBtnPlay = "PlayButton";
     public string nameBtnAbout = "AboutButton";
@@ -96,6 +99,7 @@ public class MainMenuController : MonoBehaviour
         Setup(panelLogin, false);
         Setup(panelName, false);
         Setup(panelSession, false);
+        Setup(panelPrincipal, false);
         Setup(resultsScreen, false);
         _current = panelMain;
         if (!bookPanelRoot && panelBookSelect) bookPanelRoot = panelBookSelect.GetComponent<RectTransform>();
@@ -110,6 +114,7 @@ public class MainMenuController : MonoBehaviour
         SetState(panelLogin, false, 0f);
         SetState(panelName, false, 0f);
         SetState(panelSession, false, 0f);
+        SetState(panelPrincipal, false, 0f);
         SetState(resultsScreen, false, 0f);
         _current = panelMain;
         
@@ -134,6 +139,24 @@ public class MainMenuController : MonoBehaviour
         }
         if (focusBackButton) focusBackButton.onClick.AddListener(OnBack);
         if (focusPlayButton) focusPlayButton.onClick.AddListener(OnFocusPlay);
+
+        // If we just returned from a level, show results panel
+        // #region agent log
+        DebugAgent.Log("MainMenuController.cs:Start", "PendingShowResults check", "{\"pendingShowResults\":" + (GameDataManager.PendingShowResults ? "true" : "false") + ",\"resultsScreenNotNull\":" + (resultsScreen != null ? "true" : "false") + ",\"instanceNotNull\":" + (GameDataManager.Instance != null ? "true" : "false") + "}", "A");
+        // #endregion
+        if (GameDataManager.PendingShowResults && resultsScreen != null && GameDataManager.Instance != null)
+        {
+            GameDataManager.PendingShowResults = false;
+            SetState(panelMain, false, 0f);
+            SetState(resultsScreen, true, 1f);
+            _current = resultsScreen;
+            var resultsPanel = resultsScreen.GetComponent<ResultsPanel>();
+            if (resultsPanel != null) resultsPanel.RefreshFromGameData();
+            Log("Showing Results (returned from level).");
+            // #region agent log
+            DebugAgent.Log("MainMenuController.cs:Start", "Showing results panel", "{\"resultsPanelNotNull\":" + (resultsPanel != null ? "true" : "false") + "}", "A");
+            // #endregion
+        }
     }
     
     public void OnPlay()
@@ -149,18 +172,48 @@ public class MainMenuController : MonoBehaviour
     
     public void OnLogin()
     {
-        Log("OnLogin clicked -> Fade to ResultsScreen (dummy)");
-        if (!resultsScreen) { Err("resultsScreen is NULL"); return; }
-        if (_current == resultsScreen) return;
-        StartFade(_current, resultsScreen);
+        // Teacher login: start session and show session panel
+        string teacherName = GetNameFromPanel(panelLogin);
+        if (string.IsNullOrWhiteSpace(teacherName))
+        {
+            Err("Please enter teacher name.");
+            ShowPanelError(panelLogin, "Please enter teacher name.");
+            return;
+        }
+        ClearPanelError(panelLogin);
+        teacherName = teacherName.Trim();
+        if (GameDataManager.Instance != null)
+        {
+            if (!GameDataManager.Instance.IsAllowedTeacher(teacherName))
+            {
+                ShowPanelError(panelLogin, "Not an authorized teacher. Ask principal to add you.");
+                return;
+            }
+            GameDataManager.Instance.StartSession(teacherName);
+            GameDataManager.Instance.SetTeacher(teacherName);
+        }
+        Log("OnLogin -> Session started, Fade to PanelSession");
+        if (!panelSession) { Err("panelSession is NULL"); return; }
+        if (_current == panelSession) return;
+        StartFade(_current, panelSession);
     }
     
     public void OnContinueFromName()
     {
-        Log("OnContinueFromName -> Fade to PanelBookSelect");
+        string name = GetNameFromPanel(panelName);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            Err("Please enter your name.");
+            ShowPanelError(panelName, "Please enter your name.");
+            return;
+        }
+        ClearPanelError(panelName);
+        if (GameDataManager.Instance != null)
+            GameDataManager.Instance.SetPlayerName(name.Trim());
+        Log("OnContinueFromName -> Saved name, Fade to PanelBookSelect");
         if (!panelBookSelect) { Err("panelBookSelect is NULL."); return; }
         if (_current == panelBookSelect) return;
-        StartFade(_current, panelBookSelect); 
+        StartFade(_current, panelBookSelect);
     }
     public void OnAbout()
     {
@@ -176,6 +229,18 @@ public class MainMenuController : MonoBehaviour
         if (!panelSession) { Err("panelSession is NULL"); return; }
         if (_current == panelSession) return;
         StartFade(_current, panelSession);
+    }
+
+    /// <summary>Principal menu: add/manage teachers. Panel Name is for students.</summary>
+    public void OnPrincipal()
+    {
+        // #region agent log
+        DebugAgent.Log("MainMenuController.cs:OnPrincipal", "OnPrincipal entered", "{\"panelPrincipalNotNull\":" + (panelPrincipal != null ? "true" : "false") + "}", "D");
+        // #endregion
+        Log("OnPrincipal clicked");
+        if (!panelPrincipal) { Err("panelPrincipal is NULL"); return; }
+        if (_current == panelPrincipal) return;
+        StartFade(_current, panelPrincipal);
     }
     
     public void OnResults()
@@ -194,6 +259,9 @@ public class MainMenuController : MonoBehaviour
     }
     public void OnBack()
     {
+        // #region agent log
+        DebugAgent.Log("MainMenuController.cs:OnBack", "OnBack clicked", "{\"currentName\":\"" + (_current != null ? _current.name : "null") + "\",\"isResultsScreen\":" + (_current == resultsScreen ? "true" : "false") + "}", "C");
+        // #endregion
         Log("OnBack clicked");
         if (_isZoomed && !_isTransitioning) 
         {
@@ -204,6 +272,7 @@ public class MainMenuController : MonoBehaviour
         // Context-aware back button
         if (_current == panelName) { StartFade(_current, panelMain); return; }
         if (_current == panelLogin) { StartFade(_current, panelMain); return; }
+        if (_current == panelPrincipal) { StartFade(_current, panelMain); return; }
         if (_current == panelSession) { StartFade(_current, panelMain); return; }
         if (_current == resultsScreen) { StartFade(_current, panelMain); return; }
         if (_current == panelBookSelect) { StartFade(_current, panelMain); return; }
@@ -351,6 +420,7 @@ public class MainMenuController : MonoBehaviour
     IEnumerator ResetRoutine()
     {
         _isTransitioning = true; // We are busy!
+        if (!bookPanelRoot) { _isTransitioning = false; yield break; }
         
         // --- UPDATED: Fade out the UI FIRST ---
         if (focusModeUI)
@@ -475,6 +545,16 @@ public class MainMenuController : MonoBehaviour
         b.alpha = 1f; b.interactable = true;  b.blocksRaycasts = true;
         _current = to; _co = null;
 
+        // Ensure Principal panel Back button is bound (it can be missed when panel starts inactive)
+        if (to == panelPrincipal)
+        {
+            var back = to.transform.Find("BackButton")?.GetComponent<Button>();
+            if (back != null) { back.onClick.RemoveListener(OnBack); back.onClick.AddListener(OnBack); Log("Bound Principal BackButton -> OnBack"); }
+        }
+        // Keep background wiggling visible when on any panel (ensure BackgroundWiggle stays enabled)
+        var bg = FindObjectOfType<BackgroundWiggle>();
+        if (bg != null && !bg.gameObject.activeSelf) bg.gameObject.SetActive(true);
+
         _isTransitioning = false;
         Log("Fade complete -> " + _current.name);
     }
@@ -488,6 +568,7 @@ public class MainMenuController : MonoBehaviour
         if (!panelLogin)       panelLogin       = GameObject.Find(namePanelLogin);
         if (!panelName)        panelName        = GameObject.Find(namePanelName);
         if (!panelSession)     panelSession     = GameObject.Find(namePanelSession);
+        if (!panelPrincipal)   panelPrincipal   = GameObject.Find(namePanelPrincipal);
         if (!resultsScreen)    resultsScreen    = GameObject.Find(nameResultsScreen);
 
         TryBind(nameBtnPlay, OnPlay);
@@ -510,20 +591,15 @@ public class MainMenuController : MonoBehaviour
                 Log("Wired LoginButton -> OnLogin");
             }
         }
-
-        TryBind(nameBtnPlay, OnPlay);
-        TryBind(nameBtnAbout, OnAbout);
-        TryBind(nameBtnLeaderboard, OnLeaderboard);
-        TryBind(nameBtnExit, OnExit);
-        TryBind(nameBtnAboutBack, OnBack);
-        TryBind(nameBtnLeaderboardBack, OnBack);
-        TryBind(nameBtnBackGeneric, OnBack);
         
         // Wire context-specific buttons
         TryBind("ContinueButton", OnContinueFromName);
         TryBind("EnterButton", OnContinueFromName); // For PanelName
         TryBind("SessionButton", OnSession);
+        TryBind("PrincipalButton", OnPrincipal);
         TryBind("ResultsButton", OnResults);
+        TryBind("HomeButton", OnBack);
+        TryBind("NextButton", OnBack);
 
         if (autoBindAnyBackButtons)
         {
@@ -553,7 +629,46 @@ public class MainMenuController : MonoBehaviour
     {
         var go = GameObject.Find(goName);
         var btn = go ? go.GetComponent<Button>() : null;
+        // #region agent log
+        if (goName == "HomeButton" || goName == "NextButton" || goName.Contains("Back"))
+            DebugAgent.Log("MainMenuController.cs:TryBind", "TryBind " + goName, "{\"goFound\":" + (go != null ? "true" : "false") + ",\"btnFound\":" + (btn != null ? "true" : "false") + ",\"action\":\"" + (action?.Method?.Name ?? "") + "\"}", "C");
+        // #endregion
         if (btn != null){ btn.onClick.RemoveListener(action); btn.onClick.AddListener(action); Log("Bound " + goName + " -> " + action.Method.Name); }
+    }
+
+    /// <summary>
+    /// Show validation error on panel (find TextMeshProUGUI named ErrorText or MessageText)
+    /// </summary>
+    void ShowPanelError(GameObject panel, string message)
+    {
+        if (!panel) return;
+        var tmp = panel.transform.Find("ErrorText")?.GetComponent<TMP_Text>();
+        if (!tmp) tmp = panel.transform.Find("MessageText")?.GetComponent<TMP_Text>();
+        if (tmp) { tmp.text = message; tmp.gameObject.SetActive(true); }
+    }
+
+    void ClearPanelError(GameObject panel)
+    {
+        if (!panel) return;
+        var tmp = panel.transform.Find("ErrorText")?.GetComponent<TMP_Text>();
+        if (!tmp) tmp = panel.transform.Find("MessageText")?.GetComponent<TMP_Text>();
+        if (tmp) tmp.text = string.Empty;
+    }
+
+    /// <summary>
+    /// Get first input field text from a panel (PanelName or PanelLogin)
+    /// </summary>
+    string GetNameFromPanel(GameObject panel)
+    {
+        if (!panel) return string.Empty;
+        var setup = panel.GetComponent<InputFieldSetup>();
+        if (setup != null && setup.inputFields != null && setup.inputFields.Length > 0)
+        {
+            var input = setup.inputFields[0];
+            if (input != null) return (input.text ?? string.Empty).Trim();
+        }
+        var fallback = panel.GetComponentInChildren<TMPro.TMP_InputField>(true);
+        return fallback != null ? (fallback.text ?? string.Empty).Trim() : string.Empty;
     }
 
     /// <summary>
@@ -576,5 +691,3 @@ public class MainMenuController : MonoBehaviour
     }
 
 }
-
-

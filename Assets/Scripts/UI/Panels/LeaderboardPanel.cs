@@ -15,39 +15,62 @@ public class LeaderboardPanel : MonoBehaviour
 
     private List<GameDataManager.LeaderboardEntry> _leaderboardData = new List<GameDataManager.LeaderboardEntry>();
 
+    [Header("Empty state")]
+    public string emptyMessage = "No scores yet. Play a round to appear here!";
+
     private void OnEnable()
     {
+        if (!leaderboardContent || !titleText)
+            AutoWireContent();
         RefreshLeaderboard();
     }
 
     /// <summary>
-    /// Refresh and display the global leaderboard
+    /// Refresh from Firebase (if configured) then display the global leaderboard
     /// </summary>
     public void RefreshLeaderboard()
     {
         if (GameDataManager.Instance == null) return;
 
-        // Get global leaderboard
-        _leaderboardData = GameDataManager.Instance.GetLeaderboard(maxDisplayCount);
-
-        // Clear existing entries
-        if (leaderboardContent)
+        GameDataManager.Instance.RefreshLeaderboardFromBackend(() =>
         {
-            foreach (Transform child in leaderboardContent)
+            if (!leaderboardContent) return;
+            _leaderboardData = GameDataManager.Instance.GetLeaderboard(maxDisplayCount);
+            if (titleText)
             {
-                Destroy(child.gameObject);
+                var teacher = GameDataManager.Instance.GetSessionTeacher();
+                titleText.text = $"Leaderboard — {teacher}";
             }
-        }
 
-        // Display each entry
-        int rank = 1;
-        foreach (var entry in _leaderboardData)
-        {
-            DisplayLeaderboardEntry(rank, entry);
-            rank++;
-        }
+            if (leaderboardContent)
+            {
+                foreach (Transform child in leaderboardContent)
+                    Destroy(child.gameObject);
+            }
 
-        Debug.Log($"[LeaderboardPanel] Displayed {_leaderboardData.Count} global leaderboard entries");
+            if (_leaderboardData.Count == 0 && !string.IsNullOrEmpty(emptyMessage))
+            {
+                var emptyGo = new GameObject("EmptyMessage");
+                emptyGo.transform.SetParent(leaderboardContent, false);
+                var t = emptyGo.AddComponent<TextMeshProUGUI>();
+                t.text = emptyMessage;
+                t.fontSize = 28;
+                t.alignment = TextAlignmentOptions.Center;
+                t.color = new Color(1f, 1f, 1f, 0.8f);
+                emptyGo.AddComponent<LayoutElement>().preferredHeight = 80;
+            }
+            else
+            {
+                int rank = 1;
+                foreach (var entry in _leaderboardData)
+                {
+                    DisplayLeaderboardEntry(rank, entry);
+                    rank++;
+                }
+            }
+
+            Debug.Log($"[LeaderboardPanel] Displayed {_leaderboardData.Count} global leaderboard entries");
+        });
     }
 
     /// <summary>

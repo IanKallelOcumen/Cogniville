@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -10,6 +11,9 @@ public class GameDataManager : MonoBehaviour
 {
     public static GameDataManager Instance { get; private set; }
 
+    /// <summary>When true, MainMenu will auto-show Results panel on next load (e.g. after returning from a level).</summary>
+    public static bool PendingShowResults { get; set; }
+
     [System.Serializable]
     public class PlayerData
     {
@@ -20,6 +24,11 @@ public class GameDataManager : MonoBehaviour
         public int questionsCount;
         public float timeTaken;
         public float accuracy;
+        /// <summary>Last completed round: score for that round only.</summary>
+        public int lastRoundScore;
+        public int lastRoundCorrect;
+        public int lastRoundTotal;
+        public float lastRoundTime;
     }
 
     [System.Serializable]
@@ -56,6 +65,8 @@ public class GameDataManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        if (FirebaseBackend.Instance == null && GetComponent<FirebaseBackend>() == null)
+            gameObject.AddComponent<FirebaseBackend>();
         LoadPlayerData();
         LoadLeaderboard();
     }
@@ -80,6 +91,8 @@ public class GameDataManager : MonoBehaviour
         PlayerPrefs.SetInt(SESSION_ACTIVE_KEY, 1);
         PlayerPrefs.SetString(SESSION_TEACHER_KEY, teacherName);
         PlayerPrefs.Save();
+        if (FirebaseBackend.Instance != null && FirebaseBackend.Instance.IsReady)
+            FirebaseBackend.Instance.SetSessionActive(teacherName, true);
         Debug.Log($"[GameData] Session started by teacher: {teacherName}");
     }
     
@@ -88,8 +101,11 @@ public class GameDataManager : MonoBehaviour
     /// </summary>
     public void EndSession()
     {
+        var teacher = GetSessionTeacher();
         PlayerPrefs.SetInt(SESSION_ACTIVE_KEY, 0);
         PlayerPrefs.Save();
+        if (FirebaseBackend.Instance != null && FirebaseBackend.Instance.IsReady)
+            FirebaseBackend.Instance.SetSessionActive(teacher, false);
         ClearSessionStudents();
         Debug.Log("[GameData] Session ended");
     }
@@ -215,6 +231,10 @@ public class GameDataManager : MonoBehaviour
     /// </summary>
     public void SetGameResults(int score, int correct, int total, float timeTaken)
     {
+        _currentPlayer.lastRoundScore = score;
+        _currentPlayer.lastRoundCorrect = correct;
+        _currentPlayer.lastRoundTotal = total;
+        _currentPlayer.lastRoundTime = timeTaken;
         _currentPlayer.quesCorrect = correct;
         _currentPlayer.questionsCount = total;
         _currentPlayer.timeTaken = timeTaken;
@@ -227,7 +247,11 @@ public class GameDataManager : MonoBehaviour
         // Also record in session stats (for teacher's session leaderboard)
         RecordStudentStats(_currentPlayer.playerName, score, correct, total, timeTaken);
 
+        PendingShowResults = true;
         Debug.Log($"[GameDataManager] Game Results - Score: {score}, Accuracy: {_currentPlayer.accuracy}%");
+        // #region agent log
+        DebugAgent.Log("GameDataManager.cs:SetGameResults", "SetGameResults called", "{\"score\":" + score + ",\"correct\":" + correct + ",\"total\":" + total + ",\"timeTaken\":" + timeTaken + ",\"pendingShowResults\":true}", "E");
+        // #endregion
     }
 
     /// <summary>
@@ -259,7 +283,7 @@ public class GameDataManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Add score to leaderboard
+    /// Add score to leaderboard (local + Firebase if configured)
     /// </summary>
     private void AddToLeaderboard(int score)
     {
@@ -270,14 +294,39 @@ public class GameDataManager : MonoBehaviour
         };
         _leaderboard.Add(entry);
         SortLeaderboard();
+        if (FirebaseBackend.Instance != null && FirebaseBackend.Instance.IsReady)
+            FirebaseBackend.Instance.AddLeaderboardEntry(_currentPlayer.playerName, score, _currentPlayer.teacherName);
     }
 
     /// <summary>
-    /// Get top N leaderboard entries
+    /// Get top N leaderboard entries (from local cache)
     /// </summary>
     public List<LeaderboardEntry> GetLeaderboard(int topCount = 10)
     {
+        if (_leaderboard == null || _leaderboard.Count == 0)
+            return new List<LeaderboardEntry>();
         return _leaderboard.GetRange(0, Mathf.Min(topCount, _leaderboard.Count));
+    }
+
+    /// <summary>
+    /// Refresh leaderboard from Firebase then invoke onDone. Call from LeaderboardPanel when opening.
+    /// </summary>
+    public void RefreshLeaderboardFromBackend(Action onDone)
+    {
+        if (FirebaseBackend.Instance == null || !FirebaseBackend.Instance.IsReady)
+        {
+            onDone?.Invoke();
+            return;
+        }
+        FirebaseBackend.Instance.GetLeaderboard(50, list =>
+        {
+            if (list != null && list.Count > 0)
+            {
+                _leaderboard = list;
+                SortLeaderboard();
+            }
+            onDone?.Invoke();
+        });
     }
 
     private void SortLeaderboard()
@@ -298,5 +347,66 @@ public class GameDataManager : MonoBehaviour
         _currentPlayer.questionsCount = 0;
         _currentPlayer.timeTaken = 0;
         _currentPlayer.accuracy = 0;
+    }
+
+    // ==================== PRINCIPAL: TEACHER LIST ====================
+    private const string TEACHERS_PREF_KEY = "Cogniville_Teachers";
+    private const char TEACHERS_SEPARATOR = '|';
+
+    /// <summary>
+    /// Add a teacher (principal-only). Persisted to PlayerPrefs.
+    /// </summary>
+    public void AddTeacher(string teacherName)
+    {
+        if (string.IsNullOrWhiteSpace(teacherName)) return;
+        var list = GetTeachers();
+        var name = teacherName.Trim();
+        if (list.Contains(name)) return;
+        list.Add(name);
+        SaveTeachers(list);
+        Debug.Log($"[GameDataManager] Teacher added: {name}");
+    }
+
+    /// <summary>
+    /// Remove a teacher by name.
+    /// </summary>
+    public void RemoveTeacher(string teacherName)
+    {
+        if (string.IsNullOrWhiteSpace(teacherName)) return;
+        var list = GetTeachers();
+        list.RemoveAll(t => string.Equals(t, teacherName.Trim(), System.StringComparison.OrdinalIgnoreCase));
+        SaveTeachers(list);
+    }
+
+    /// <summary>
+    /// Get all teachers added by principal.
+    /// </summary>
+    public List<string> GetTeachers()
+    {
+        var raw = PlayerPrefs.GetString(TEACHERS_PREF_KEY, "");
+        if (string.IsNullOrEmpty(raw)) return new List<string>();
+        var list = new List<string>();
+        foreach (var s in raw.Split(TEACHERS_SEPARATOR))
+        {
+            var t = s.Trim();
+            if (!string.IsNullOrEmpty(t)) list.Add(t);
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Check if a name is in the allowed teachers list (for login). If list is empty, any name is allowed.
+    /// </summary>
+    public bool IsAllowedTeacher(string teacherName)
+    {
+        var list = GetTeachers();
+        if (list.Count == 0) return true;
+        return list.Exists(t => string.Equals(t, teacherName?.Trim(), System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void SaveTeachers(List<string> list)
+    {
+        PlayerPrefs.SetString(TEACHERS_PREF_KEY, string.Join(TEACHERS_SEPARATOR.ToString(), list));
+        PlayerPrefs.Save();
     }
 }

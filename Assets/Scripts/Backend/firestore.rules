@@ -1,0 +1,13 @@
+rules_version = '2';
+// Copy these rules into Firebase Console > Firestore Database > Rules
+// Spark plan: allows read/write for authenticated (Anonymous) users only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/{entry} {
+      allow read, create: if request.auth != null;
+    }
+    match /sessions/{session} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
