@@ -349,22 +349,26 @@ public class GameDataManager : MonoBehaviour
         _currentPlayer.accuracy = 0;
     }
 
-    // ==================== PRINCIPAL: TEACHER LIST ====================
+    // ==================== PRINCIPAL: TEACHER LIST (name:password) ====================
     private const string TEACHERS_PREF_KEY = "Cogniville_Teachers";
     private const char TEACHERS_SEPARATOR = '|';
+    private const char TEACHER_PASS_SEP = ':';
 
     /// <summary>
-    /// Add a teacher (principal-only). Persisted to PlayerPrefs.
+    /// Add a teacher with optional password (principal-only). Stored as "name" or "name:password".
     /// </summary>
-    public void AddTeacher(string teacherName)
+    public void AddTeacher(string teacherName, string password = null)
     {
         if (string.IsNullOrWhiteSpace(teacherName)) return;
-        var list = GetTeachers();
+        var list = GetTeacherEntries();
         var name = teacherName.Trim();
-        if (list.Contains(name)) return;
-        list.Add(name);
-        SaveTeachers(list);
-        Debug.Log($"[GameDataManager] Teacher added: {name}");
+        var pass = (password ?? "").Trim();
+        var entry = string.IsNullOrEmpty(pass) ? name : name + TEACHER_PASS_SEP + pass;
+        if (list.Exists(e => GetTeacherNameFromEntry(e).Equals(name, System.StringComparison.OrdinalIgnoreCase)))
+            return;
+        list.Add(entry);
+        SaveTeacherEntries(list);
+        Debug.Log($"[GameDataManager] Teacher added: {name}" + (string.IsNullOrEmpty(pass) ? "" : " (with password)"));
     }
 
     /// <summary>
@@ -373,15 +377,25 @@ public class GameDataManager : MonoBehaviour
     public void RemoveTeacher(string teacherName)
     {
         if (string.IsNullOrWhiteSpace(teacherName)) return;
-        var list = GetTeachers();
-        list.RemoveAll(t => string.Equals(t, teacherName.Trim(), System.StringComparison.OrdinalIgnoreCase));
-        SaveTeachers(list);
+        var list = GetTeacherEntries();
+        var name = teacherName.Trim();
+        list.RemoveAll(e => GetTeacherNameFromEntry(e).Equals(name, System.StringComparison.OrdinalIgnoreCase));
+        SaveTeacherEntries(list);
     }
 
     /// <summary>
-    /// Get all teachers added by principal.
+    /// Get teacher names only (for display in principal list).
     /// </summary>
     public List<string> GetTeachers()
+    {
+        var entries = GetTeacherEntries();
+        var names = new List<string>();
+        foreach (var e in entries)
+            names.Add(GetTeacherNameFromEntry(e));
+        return names;
+    }
+
+    private List<string> GetTeacherEntries()
     {
         var raw = PlayerPrefs.GetString(TEACHERS_PREF_KEY, "");
         if (string.IsNullOrEmpty(raw)) return new List<string>();
@@ -394,19 +408,44 @@ public class GameDataManager : MonoBehaviour
         return list;
     }
 
-    /// <summary>
-    /// Check if a name is in the allowed teachers list (for login). If list is empty, any name is allowed.
-    /// </summary>
-    public bool IsAllowedTeacher(string teacherName)
+    private static string GetTeacherNameFromEntry(string entry)
     {
-        var list = GetTeachers();
-        if (list.Count == 0) return true;
-        return list.Exists(t => string.Equals(t, teacherName?.Trim(), System.StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrEmpty(entry)) return "";
+        var i = entry.IndexOf(TEACHER_PASS_SEP);
+        return i >= 0 ? entry.Substring(0, i).Trim() : entry.Trim();
     }
 
-    private void SaveTeachers(List<string> list)
+    private static string GetTeacherPasswordFromEntry(string entry)
+    {
+        if (string.IsNullOrEmpty(entry)) return "";
+        var i = entry.IndexOf(TEACHER_PASS_SEP);
+        return i >= 0 ? entry.Substring(i + 1).Trim() : "";
+    }
+
+    private void SaveTeacherEntries(List<string> list)
     {
         PlayerPrefs.SetString(TEACHERS_PREF_KEY, string.Join(TEACHERS_SEPARATOR.ToString(), list));
         PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// Check if name + password are allowed. If list is empty, any name is allowed.
+    /// Entries stored as "name:password" require matching password; legacy "name" only requires name.
+    /// </summary>
+    public bool IsAllowedTeacher(string teacherName, string password = null)
+    {
+        var list = GetTeacherEntries();
+        if (list.Count == 0) return true;
+        var name = (teacherName ?? "").Trim();
+        var pass = (password ?? "").Trim();
+        foreach (var entry in list)
+        {
+            var entryName = GetTeacherNameFromEntry(entry);
+            if (!entryName.Equals(name, System.StringComparison.OrdinalIgnoreCase)) continue;
+            var storedPass = GetTeacherPasswordFromEntry(entry);
+            if (string.IsNullOrEmpty(storedPass)) return true;
+            return storedPass == pass;
+        }
+        return false;
     }
 }

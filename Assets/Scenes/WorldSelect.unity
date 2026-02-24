@@ -1750,8 +1750,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ed5985279883da4aaa20101916b6fd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldButtonFeedback
-  target: {fileID: 0}
-  bg: {fileID: 0}
+  target: {fileID: 777852887}
+  bg: {fileID: 1541587398}
   worldItem: {fileID: 1762677424}
   kickAmount: 6
   scaleOnPress: 1
@@ -3353,8 +3353,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ed5985279883da4aaa20101916b6fd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldButtonFeedback
-  target: {fileID: 0}
-  bg: {fileID: 0}
+  target: {fileID: 1931198689}
+  bg: {fileID: 1541587398}
   worldItem: {fileID: 1268191140}
   kickAmount: 6
   scaleOnPress: 1
@@ -3521,8 +3521,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ed5985279883da4aaa20101916b6fd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldButtonFeedback
-  target: {fileID: 0}
-  bg: {fileID: 0}
+  target: {fileID: 1986798815}
+  bg: {fileID: 1541587398}
   worldItem: {fileID: 1383682871}
   kickAmount: 6
   scaleOnPress: 1

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
@@ -9,7 +10,7 @@ using TMPro;
 /// </summary>
 public static class CognivilleUIMenu
 {
-    const string UiFontGuid = "8f586378b4e144a9851e7b34d9b748ee";
+    const string UiFontGuid = "042baed0a39830a4e9cfe1c6d37b133f"; // Comic Jungle SDF
     const int UiFontSize = 24;
 
     static TMP_FontAsset GetUIFont()
@@ -23,7 +24,7 @@ public static class CognivilleUIMenu
     public static void ApplyUIFontToSelection()
     {
         var font = GetUIFont();
-        if (font == null) { EditorUtility.DisplayDialog("Cogniville", "UI font not found (LiberationSans SDF).", "OK"); return; }
+        if (font == null) { EditorUtility.DisplayDialog("Cogniville", "UI font not found (Comic Jungle SDF).", "OK"); return; }
         int n = 0;
         foreach (var go in Selection.gameObjects)
         {
@@ -102,5 +103,91 @@ public static class CognivilleUIMenu
             n++;
         }
         EditorUtility.DisplayDialog("Cogniville", $"Set scaleOnPress = 1 on {n} button feedback component(s).", "OK");
+    }
+
+    /// <summary>
+    /// Standard: same sprite (Play button idle), same pressed sprite, and same font on all buttons and text in the open scene.
+    /// Uses the first Button that has an Image with a sprite as the reference (e.g. Play button).
+    /// </summary>
+    [MenuItem("Tools/Cogniville/Apply standard UI (Play look) – all buttons + fonts in scene")]
+    public static void ApplyStandardPlayLookInScene()
+    {
+        UnityEngine.Object[] objs = Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        Button referenceButton = null;
+        foreach (Button b in objs)
+        {
+            var img = b.GetComponent<Image>();
+            if (img != null && img.sprite != null)
+            {
+                referenceButton = b;
+                if (b.gameObject.name.IndexOf("Play", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    break;
+            }
+        }
+        if (referenceButton == null)
+        {
+            EditorUtility.DisplayDialog("Cogniville", "No button with a sprite found in this scene. Open a scene that contains the Play button (e.g. WorldSelect or MainMenu), then run this again.", "OK");
+            return;
+        }
+        Sprite idleSprite = referenceButton.GetComponent<Image>().sprite;
+        Sprite pressedSprite = referenceButton.spriteState.pressedSprite;
+        if (pressedSprite == null) pressedSprite = idleSprite;
+
+        int buttonsUpdated = 0;
+        int imagesUpdated = 0;
+        foreach (Button b in objs)
+        {
+            var img = b.GetComponent<Image>();
+            if (img != null)
+            {
+                Undo.RecordObject(img, "Apply standard button sprite");
+                if (img.sprite != idleSprite) { img.sprite = idleSprite; imagesUpdated++; }
+            }
+            var selectable = b as UnityEngine.UI.Selectable;
+            if (selectable != null && selectable.transition == Selectable.Transition.SpriteSwap)
+            {
+                var ss = selectable.spriteState;
+                if (ss.pressedSprite != pressedSprite)
+                {
+                    Undo.RecordObject(selectable, "Apply standard pressed sprite");
+                    ss.pressedSprite = pressedSprite;
+                    selectable.spriteState = ss;
+                    buttonsUpdated++;
+                }
+            }
+            else if (selectable != null && selectable.transition != Selectable.Transition.SpriteSwap)
+            {
+                Undo.RecordObject(selectable, "Set Sprite Swap");
+                selectable.transition = Selectable.Transition.SpriteSwap;
+                var ss = selectable.spriteState;
+                ss.pressedSprite = pressedSprite;
+                selectable.spriteState = ss;
+                buttonsUpdated++;
+            }
+        }
+
+        var font = GetUIFont();
+        int textsUpdated = 0;
+        if (font != null)
+        {
+            foreach (var tmp in Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                Undo.RecordObject(tmp, "Apply UI font");
+                if (tmp.font != font) { ApplyFont(tmp, font); textsUpdated++; }
+            }
+            foreach (var input in Object.FindObjectsByType<TMP_InputField>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (input.textComponent != null && input.textComponent.font != font) { ApplyFont(input.textComponent, font); input.textComponent.color = new Color(0.2f, 0.2f, 0.2f, 1f); textsUpdated++; }
+                if (input.placeholder != null)
+                {
+                    var ph = input.placeholder as TMP_Text ?? input.placeholder.GetComponent<TMP_Text>();
+                    if (ph != null && ph.font != font) { ph.font = font; ph.fontSize = UiFontSize; ph.color = new Color(0.5f, 0.5f, 0.5f, 0.5f); textsUpdated++; }
+                }
+            }
+        }
+
+        if (EditorSceneManager.GetActiveScene().isDirty)
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorUtility.DisplayDialog("Cogniville", $"Standard UI applied:\n• Button (idle) sprite: {imagesUpdated} Image(s)\n• Button (pressed) sprite: {buttonsUpdated} Button(s)\n• Font (Comic Jungle SDF): {textsUpdated} TMP/font(s)", "OK");
     }
 }

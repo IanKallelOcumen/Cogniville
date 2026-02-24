@@ -11,12 +11,14 @@ public class PrincipalPanel : MonoBehaviour
 {
     [Header("UI References (optional - auto-find by name)")]
     public TMP_InputField teacherNameInput;
+    [Tooltip("Optional: password for the teacher. If set, teacher must enter this to log in.")]
+    public TMP_InputField teacherPasswordInput;
     public Button addTeacherButton;
     public Button backButton;
     [Tooltip("Single text that lists all teachers (one per line)")]
     public TextMeshProUGUI teachersListText;
     [Tooltip("Optional: message when list is empty")]
-    public string emptyListMessage = "No teachers added yet. Add a teacher name above.";
+    public string emptyListMessage = "No teachers added yet. Add a teacher name and password above.";
 
     private void OnEnable()
     {
@@ -43,11 +45,13 @@ public class PrincipalPanel : MonoBehaviour
             if (teachersListText) teachersListText.text = "Enter a teacher name first.";
             return;
         }
+        string password = GetTeacherPasswordFromInput();
 
         if (GameDataManager.Instance != null)
         {
-            GameDataManager.Instance.AddTeacher(name);
+            GameDataManager.Instance.AddTeacher(name, password);
             if (teacherNameInput) teacherNameInput.text = "";
+            if (teacherPasswordInput) teacherPasswordInput.text = "";
             RefreshList();
         }
     }
@@ -86,8 +90,27 @@ public class PrincipalPanel : MonoBehaviour
     {
         if (teacherNameInput != null)
             return (teacherNameInput.text ?? "").Trim();
-        var fallback = GetComponentInChildren<TMP_InputField>(true);
-        return fallback != null ? (fallback.text ?? "").Trim() : "";
+        var all = GetComponentsInChildren<TMP_InputField>(true);
+        if (all != null && all.Length > 0)
+        {
+            foreach (var t in all)
+                if (t != null && (t.name ?? "").ToLowerInvariant().Contains("name"))
+                    return (t.text ?? "").Trim();
+            return (all[0].text ?? "").Trim();
+        }
+        return "";
+    }
+
+    string GetTeacherPasswordFromInput()
+    {
+        if (teacherPasswordInput != null)
+            return (teacherPasswordInput.text ?? "").Trim();
+        var all = GetComponentsInChildren<TMP_InputField>(true);
+        if (all != null)
+            foreach (var t in all)
+                if (t != null && (t.name ?? "").ToLowerInvariant().Contains("password"))
+                    return (t.text ?? "").Trim();
+        return "";
     }
 
     void AutoWire()
@@ -96,6 +119,18 @@ public class PrincipalPanel : MonoBehaviour
             teacherNameInput = transform.Find("TeacherNameInput")?.GetComponent<TMP_InputField>();
         if (!teacherNameInput)
             teacherNameInput = GetComponentInChildren<TMP_InputField>(true);
+        if (!teacherPasswordInput)
+        {
+            teacherPasswordInput = transform.Find("TeacherPasswordInput")?.GetComponent<TMP_InputField>();
+            if (!teacherPasswordInput)
+            {
+                var all = GetComponentsInChildren<TMP_InputField>(true);
+                if (all != null)
+                    foreach (var t in all)
+                        if (t != null && (t.name ?? "").ToLowerInvariant().Contains("password"))
+                        { teacherPasswordInput = t; break; }
+            }
+        }
 
         if (!addTeacherButton)
         {

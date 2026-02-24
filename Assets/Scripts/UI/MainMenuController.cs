@@ -73,6 +73,7 @@ public class MainMenuController : MonoBehaviour
     private Vector3 _originalBookPanelScale = Vector3.one;
     
     private bool _isTransitioning = false;
+    private float _lastLoginErrorTime = -999f;
 
     void Log(string m){ if (debugLogs) Debug.Log("[MainMenu] " + m); }
     void Err(string m){ Debug.LogError("[MainMenu] " + m); }
@@ -150,11 +151,11 @@ public class MainMenuController : MonoBehaviour
             SetState(panelMain, false, 0f);
             SetState(resultsScreen, true, 1f);
             _current = resultsScreen;
-            var resultsPanel = resultsScreen.GetComponent<ResultsPanel>();
-            if (resultsPanel != null) resultsPanel.RefreshFromGameData();
+            if (resultsScreen != null)
+                resultsScreen.SendMessage("RefreshFromGameData", SendMessageOptions.DontRequireReceiver);
             Log("Showing Results (returned from level).");
             // #region agent log
-            DebugAgent.Log("MainMenuController.cs:Start", "Showing results panel", "{\"resultsPanelNotNull\":" + (resultsPanel != null ? "true" : "false") + "}", "A");
+            DebugAgent.Log("MainMenuController.cs:Start", "Showing results panel", "{}", "A");
             // #endregion
         }
     }
@@ -172,21 +173,26 @@ public class MainMenuController : MonoBehaviour
     
     public void OnLogin()
     {
-        // Teacher login: start session and show session panel
+        // Teacher login: name + password, then start session
         string teacherName = GetNameFromPanel(panelLogin);
+        string password = GetPasswordFromLoginPanel(panelLogin);
         if (string.IsNullOrWhiteSpace(teacherName))
         {
-            Err("Please enter teacher name.");
-            ShowPanelError(panelLogin, "Please enter teacher name.");
+            if (Time.time - _lastLoginErrorTime > 0.5f)
+            {
+                _lastLoginErrorTime = Time.time;
+                Err("Please enter teacher name.");
+                ShowPanelError(panelLogin, "Please enter teacher name.");
+            }
             return;
         }
         ClearPanelError(panelLogin);
         teacherName = teacherName.Trim();
         if (GameDataManager.Instance != null)
         {
-            if (!GameDataManager.Instance.IsAllowedTeacher(teacherName))
+            if (!GameDataManager.Instance.IsAllowedTeacher(teacherName, password))
             {
-                ShowPanelError(panelLogin, "Not an authorized teacher. Ask principal to add you.");
+                ShowPanelError(panelLogin, "Not an authorized teacher or wrong password. Ask principal to add you.");
                 return;
             }
             GameDataManager.Instance.StartSession(teacherName);
@@ -524,6 +530,10 @@ public class MainMenuController : MonoBehaviour
     {
         _isTransitioning = true;
 
+        // Principal panel is inside PanelLogin; ensure parent is active so it's visible
+        if (to == panelPrincipal && panelLogin != null && !panelLogin.activeSelf)
+            panelLogin.SetActive(true);
+
         var a = from.GetComponent<CanvasGroup>(); if (!a) a = from.AddComponent<CanvasGroup>();
         var b = to.GetComponent<CanvasGroup>();   if (!b) b = to.AddComponent<CanvasGroup>();
 
@@ -542,6 +552,9 @@ public class MainMenuController : MonoBehaviour
         }
 
         a.alpha = 0f; a.interactable = false; a.blocksRaycasts = false; from.SetActive(false);
+        // When leaving Principal (which lives inside PanelLogin), hide the whole login panel
+        if (from == panelPrincipal && panelLogin != null)
+            panelLogin.SetActive(false);
         b.alpha = 1f; b.interactable = true;  b.blocksRaycasts = true;
         _current = to; _co = null;
 
@@ -552,7 +565,7 @@ public class MainMenuController : MonoBehaviour
             if (back != null) { back.onClick.RemoveListener(OnBack); back.onClick.AddListener(OnBack); Log("Bound Principal BackButton -> OnBack"); }
         }
         // Keep background wiggling visible when on any panel (ensure BackgroundWiggle stays enabled)
-        var bg = FindObjectOfType<BackgroundWiggle>();
+        var bg = Object.FindFirstObjectByType<BackgroundWiggle>();
         if (bg != null && !bg.gameObject.activeSelf) bg.gameObject.SetActive(true);
 
         _isTransitioning = false;
@@ -656,7 +669,8 @@ public class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// Get first input field text from a panel (PanelName or PanelLogin)
+    /// Get first input field text from a panel (PanelName or PanelLogin).
+    /// For PanelLogin, prefers an input named Email/Teacher/Name so we read the teacher name field.
     /// </summary>
     string GetNameFromPanel(GameObject panel)
     {
@@ -667,8 +681,36 @@ public class MainMenuController : MonoBehaviour
             var input = setup.inputFields[0];
             if (input != null) return (input.text ?? string.Empty).Trim();
         }
-        var fallback = panel.GetComponentInChildren<TMPro.TMP_InputField>(true);
-        return fallback != null ? (fallback.text ?? string.Empty).Trim() : string.Empty;
+        var allInputs = panel.GetComponentsInChildren<TMPro.TMP_InputField>(true);
+        if (allInputs != null && allInputs.Length > 0)
+        {
+            foreach (var input in allInputs)
+            {
+                if (input == null) continue;
+                string name = (input.name ?? "").ToLowerInvariant();
+                if (name.Contains("email") || name.Contains("teacher") || name.Contains("name"))
+                    return (input.text ?? string.Empty).Trim();
+            }
+            return (allInputs[0].text ?? string.Empty).Trim();
+        }
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Get password from login panel (second input or one named Password).
+    /// </summary>
+    string GetPasswordFromLoginPanel(GameObject panel)
+    {
+        if (!panel) return string.Empty;
+        var allInputs = panel.GetComponentsInChildren<TMPro.TMP_InputField>(true);
+        if (allInputs == null || allInputs.Length == 0) return string.Empty;
+        foreach (var input in allInputs)
+        {
+            if (input != null && (input.name ?? "").ToLowerInvariant().Contains("password"))
+                return input.text ?? string.Empty;
+        }
+        if (allInputs.Length >= 2) return allInputs[1].text ?? string.Empty;
+        return string.Empty;
     }
 
     /// <summary>
