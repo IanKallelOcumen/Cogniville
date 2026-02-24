@@ -18,8 +18,8 @@ Unity 2D game (C#). Main flows: main menu → student name (PanelName) → book 
 - **PanelName** = student name (before book select). **PanelLogin** = teacher login. **PanelPrincipal** = principal adds teachers. **PanelResult** / ResultsScreen = stats after level. Buttons: PrincipalButton, HomeButton, NextButton, BackButton; MainMenuController binds by name (TryBind) and auto-binds any button whose name contains "back".
 
 ## UI consistency
-- **Font:** LiberationSans SDF (guid `8f586378b4e144a9851e7b34d9b748ee`), size 24 for inputs; use Tools > Cogniville to apply.
-- **Buttons:** No shrink — hoverScaleAmount 1.1, scaleOnPress 1 (UIFloat, ButtonFeedback/ButtonPressAnimator).
+- **Font:** Large, readable text — size 32 for inputs, 30 for button labels. Use Tools > Cogniville to apply. See rule `ui-ux-consistency.mdc` for full checklist.
+- **Buttons:** Same sprite and font on ALL buttons; hoverScaleAmount 1.1, scaleOnPress 1 (no shrink). Run **Apply standard UI (Play look)** and hover/press scale tools so every button matches.
 - **Principal panel Back:** Bound in MainMenuController after fade to panelPrincipal (Find("BackButton") under panel).
 
 ## Teachers

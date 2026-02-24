@@ -11,7 +11,7 @@ using TMPro;
 public static class CognivilleUIMenu
 {
     const string UiFontGuid = "042baed0a39830a4e9cfe1c6d37b133f"; // Comic Jungle SDF
-    const int UiFontSize = 24;
+    const int UiFontSize = 32;
 
     static TMP_FontAsset GetUIFont()
     {
@@ -47,7 +47,7 @@ public static class CognivilleUIMenu
         Undo.RecordObject(tmp, "Apply UI font");
         tmp.font = font;
         tmp.fontSize = UiFontSize;
-        tmp.fontSizeMin = 18;
+        tmp.fontSizeMin = 24;
         tmp.fontSizeMax = 72;
         tmp.enableAutoSizing = false;
     }

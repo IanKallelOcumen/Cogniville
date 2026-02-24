@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 /// <summary>
-/// Displays current session info (teacher name, status) and End Session button.
+/// Displays current session info (teacher name, status), lets teacher add students (last name → code), and End Session button.
 /// Attach to PanelSession. Refreshes when enabled.
 /// </summary>
 public class SessionPanel : MonoBehaviour
@@ -12,16 +13,28 @@ public class SessionPanel : MonoBehaviour
     public TextMeshProUGUI teacherNameText;
     public TextMeshProUGUI sessionStatusText;
     public Button endSessionButton;
+    [Header("Add students (optional - auto-find by name)")]
+    public TMP_InputField studentLastNameInput;
+    public Button addStudentButton;
+    public TextMeshProUGUI sessionStudentsListText;
 
     private void OnEnable()
     {
         if (!teacherNameText || !sessionStatusText || !endSessionButton)
             AutoWireFields();
+        if (!studentLastNameInput || !addStudentButton || !sessionStudentsListText)
+            AutoWireStudentFields();
         RefreshSessionDisplay();
+        RefreshSessionStudentsList();
         if (endSessionButton)
         {
             endSessionButton.onClick.RemoveListener(OnEndSession);
             endSessionButton.onClick.AddListener(OnEndSession);
+        }
+        if (addStudentButton)
+        {
+            addStudentButton.onClick.RemoveListener(OnAddSessionStudent);
+            addStudentButton.onClick.AddListener(OnAddSessionStudent);
         }
     }
 
@@ -40,6 +53,100 @@ public class SessionPanel : MonoBehaviour
                 sessionStatusText.text = string.IsNullOrEmpty(teacher) ? "No session" : (active ? $"Teacher: {teacher} — Session active" : $"Teacher: {teacher} — Ended");
         }
         if (endSessionButton) endSessionButton.interactable = active;
+        if (addStudentButton) addStudentButton.interactable = active;
+        if (studentLastNameInput) studentLastNameInput.interactable = active;
+    }
+
+    public void OnAddSessionStudent()
+    {
+        if (GameDataManager.Instance == null || !GameDataManager.Instance.IsSessionActive()) return;
+        string lastName = GetStudentLastNameFromInput();
+        if (string.IsNullOrWhiteSpace(lastName))
+        {
+            if (sessionStudentsListText) sessionStudentsListText.text = "Enter student last name first.";
+            return;
+        }
+        string code = GameDataManager.Instance.AddSessionStudent(lastName);
+        if (code == null)
+        {
+            if (sessionStudentsListText) sessionStudentsListText.text = "A student with that last name is already in this session.";
+            return;
+        }
+        if (studentLastNameInput) studentLastNameInput.text = "";
+        RefreshSessionStudentsList();
+        if (sessionStudentsListText)
+            sessionStudentsListText.text += "\n\nGive this code to " + lastName.Trim() + ": " + code;
+    }
+
+    private void RefreshSessionStudentsList()
+    {
+        if (!sessionStudentsListText) return;
+        if (GameDataManager.Instance == null || !GameDataManager.Instance.IsSessionActive())
+        {
+            sessionStudentsListText.text = "Start a session to add students.";
+            return;
+        }
+        var list = GameDataManager.Instance.GetSessionStudentsWithCodes();
+        if (list == null || list.Count == 0)
+        {
+            sessionStudentsListText.text = "No students added yet. Add a student last name above; you'll get a code to give them.";
+            return;
+        }
+        var lines = new List<string> { "Students in this session (give each their code to join):" };
+        foreach (var (lastName, code) in list)
+            lines.Add(lastName + " — Code: " + code);
+        sessionStudentsListText.text = string.Join("\n", lines);
+    }
+
+    private string GetStudentLastNameFromInput()
+    {
+        if (studentLastNameInput != null)
+            return (studentLastNameInput.text ?? "").Trim();
+        var all = GetComponentsInChildren<TMP_InputField>(true);
+        if (all != null)
+            foreach (var t in all)
+                if (t != null && (t.name ?? "").ToLowerInvariant().Contains("last"))
+                    return (t.text ?? "").Trim();
+        return "";
+    }
+
+    private void AutoWireStudentFields()
+    {
+        if (!studentLastNameInput)
+        {
+            var t = transform.Find("StudentLastNameInput");
+            if (t) studentLastNameInput = t.GetComponent<TMP_InputField>();
+            if (!studentLastNameInput)
+            {
+                var all = GetComponentsInChildren<TMP_InputField>(true);
+                foreach (var f in all)
+                    if (f != null && (f.name ?? "").ToLowerInvariant().Contains("last"))
+                    { studentLastNameInput = f; break; }
+            }
+        }
+        if (!addStudentButton)
+        {
+            var t = transform.Find("AddStudentButton");
+            if (t) addStudentButton = t.GetComponent<Button>();
+            if (!addStudentButton)
+            {
+                var btns = GetComponentsInChildren<Button>(true);
+                foreach (var b in btns)
+                    if (b.name.ToLowerInvariant().Contains("add"))
+                    { addStudentButton = b; break; }
+            }
+        }
+        if (!sessionStudentsListText)
+        {
+            sessionStudentsListText = transform.Find("SessionStudentsListText")?.GetComponent<TextMeshProUGUI>();
+            if (!sessionStudentsListText)
+            {
+                var all = GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (var tmp in all)
+                    if (tmp.name.ToLowerInvariant().Contains("student") && tmp != teacherNameText && tmp != sessionStatusText)
+                    { sessionStudentsListText = tmp; break; }
+            }
+        }
     }
 
     public void OnEndSession()

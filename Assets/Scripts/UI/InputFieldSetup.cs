@@ -35,12 +35,12 @@ public class InputFieldSetup : MonoBehaviour
             // Ensure input is interactable
             input.interactable = true;
             
-            // Match UI: same font size and colors as rest of menu
+            // Match UI: large, readable font size and colors as rest of menu
             if (input.textComponent != null)
             {
                 input.textComponent.raycastTarget = true;
                 input.textComponent.color = Color.white;
-                input.textComponent.fontSize = 24;
+                input.textComponent.fontSize = 32;
             }
             
             if (input.placeholder != null)
@@ -50,7 +50,7 @@ public class InputFieldSetup : MonoBehaviour
                 if (placeholderText != null)
                 {
                     placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-                    placeholderText.fontSize = 24;
+                    placeholderText.fontSize = 32;
                 }
             }
 

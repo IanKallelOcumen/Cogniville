@@ -10,15 +10,14 @@ using System.Collections.Generic;
 public class PrincipalPanel : MonoBehaviour
 {
     [Header("UI References (optional - auto-find by name)")]
+    [Tooltip("Teacher first name. A random code is generated and shown when added.")]
     public TMP_InputField teacherNameInput;
-    [Tooltip("Optional: password for the teacher. If set, teacher must enter this to log in.")]
-    public TMP_InputField teacherPasswordInput;
     public Button addTeacherButton;
     public Button backButton;
-    [Tooltip("Single text that lists all teachers (one per line)")]
+    [Tooltip("Single text that lists all teachers with their codes (one per line)")]
     public TextMeshProUGUI teachersListText;
     [Tooltip("Optional: message when list is empty")]
-    public string emptyListMessage = "No teachers added yet. Add a teacher name and password above.";
+    public string emptyListMessage = "No teachers added yet. Add a teacher first name above. You'll get a code to give them.";
 
     private void OnEnable()
     {
@@ -39,20 +38,25 @@ public class PrincipalPanel : MonoBehaviour
 
     public void OnAddTeacher()
     {
-        string name = GetTeacherNameFromInput();
-        if (string.IsNullOrWhiteSpace(name))
+        string firstName = GetTeacherNameFromInput();
+        if (string.IsNullOrWhiteSpace(firstName))
         {
-            if (teachersListText) teachersListText.text = "Enter a teacher name first.";
+            if (teachersListText) teachersListText.text = "Enter teacher first name first.";
             return;
         }
-        string password = GetTeacherPasswordFromInput();
 
         if (GameDataManager.Instance != null)
         {
-            GameDataManager.Instance.AddTeacher(name, password);
+            string code = GameDataManager.Instance.AddTeacher(firstName);
+            if (code == null)
+            {
+                if (teachersListText) teachersListText.text = "A teacher with that name already exists.";
+                return;
+            }
             if (teacherNameInput) teacherNameInput.text = "";
-            if (teacherPasswordInput) teacherPasswordInput.text = "";
             RefreshList();
+            if (teachersListText)
+                teachersListText.text += "\n\nGive this code to " + firstName.Trim() + ": " + code;
         }
     }
 
@@ -76,14 +80,17 @@ public class PrincipalPanel : MonoBehaviour
             return;
         }
 
-        var list = GameDataManager.Instance.GetTeachers();
+        var list = GameDataManager.Instance.GetTeachersWithCodes();
         if (list == null || list.Count == 0)
         {
             teachersListText.text = emptyListMessage;
             return;
         }
 
-        teachersListText.text = "Teachers:\n" + string.Join("\n", list);
+        var lines = new List<string> { "Teachers (give each their code to log in):" };
+        foreach (var (name, code) in list)
+            lines.Add(name + " — Code: " + code);
+        teachersListText.text = string.Join("\n", lines);
     }
 
     string GetTeacherNameFromInput()
@@ -101,36 +108,12 @@ public class PrincipalPanel : MonoBehaviour
         return "";
     }
 
-    string GetTeacherPasswordFromInput()
-    {
-        if (teacherPasswordInput != null)
-            return (teacherPasswordInput.text ?? "").Trim();
-        var all = GetComponentsInChildren<TMP_InputField>(true);
-        if (all != null)
-            foreach (var t in all)
-                if (t != null && (t.name ?? "").ToLowerInvariant().Contains("password"))
-                    return (t.text ?? "").Trim();
-        return "";
-    }
-
     void AutoWire()
     {
         if (!teacherNameInput)
             teacherNameInput = transform.Find("TeacherNameInput")?.GetComponent<TMP_InputField>();
         if (!teacherNameInput)
             teacherNameInput = GetComponentInChildren<TMP_InputField>(true);
-        if (!teacherPasswordInput)
-        {
-            teacherPasswordInput = transform.Find("TeacherPasswordInput")?.GetComponent<TMP_InputField>();
-            if (!teacherPasswordInput)
-            {
-                var all = GetComponentsInChildren<TMP_InputField>(true);
-                if (all != null)
-                    foreach (var t in all)
-                        if (t != null && (t.name ?? "").ToLowerInvariant().Contains("password"))
-                        { teacherPasswordInput = t; break; }
-            }
-        }
 
         if (!addTeacherButton)
         {

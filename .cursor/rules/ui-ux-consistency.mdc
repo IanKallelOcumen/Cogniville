@@ -1,0 +1,16 @@
+---
+description: UI/UX consistency — alignment, large text, and apply button styling to ALL buttons
+alwaysApply: true
+---
+
+# Cogniville UI/UX consistency
+
+- **Alignment and layout:** Keep everything lined up. Use consistent anchors and sizeDeltas; center main content; keep spacing even. Good UX = clear hierarchy, readable text, obvious tap targets.
+- **Text size:** Input fields and button labels must be **large and readable**. Use font size **32** for input text/placeholders and **30** for button labels (minimum 28 for secondary text). No tiny text.
+- **Input fields:** Same size as the student name input (MainMenuController normalizes at runtime). Font size 32, autocapitalization (ContentType.Name) where appropriate.
+- **Buttons — apply to ALL:**
+  - **Look:** Same sprite and pressed sprite on every button. Use **Tools > Cogniville > Apply standard UI (Play look)** so all buttons get the same idle + pressed sprite as the Play button.
+  - **Font:** Same font and size (32 in Tools). Run **Apply UI font to all input fields** and ensure button labels use the project font at 30–32.
+  - **Animation/feedback:** Hover scale 1.1, press scale 1 (no shrink). Use **Set all buttons hover scale to 1.1** and **Set all buttons press scale to 1** so every button has UIFloat/ButtonFeedback or ButtonPressAnimator with these values.
+- **Double-check:** When adding or changing UI, verify every button in the flow has: correct sprite, same font/size, and hover/press behavior. No orphan buttons with different look or no feedback.
+- **Font style:** Use the project UI font (e.g. Comic Jungle SDF) consistently; apply via Tools > Cogniville so labels and inputs match.

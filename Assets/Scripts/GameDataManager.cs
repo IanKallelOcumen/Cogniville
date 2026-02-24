@@ -54,6 +54,9 @@ public class GameDataManager : MonoBehaviour
     private PlayerData _currentPlayer = new PlayerData();
     private List<LeaderboardEntry> _leaderboard = new List<LeaderboardEntry>();
     private Dictionary<string, StudentStats> _sessionStudents = new Dictionary<string, StudentStats>();
+    private List<(string lastName, string code)> _sessionStudentCodes = new List<(string, string)>();
+    private const int SESSION_STUDENT_CODE_LENGTH = 6;
+    private static readonly char[] SESSION_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".ToCharArray();
 
     private void Awake()
     {
@@ -91,6 +94,7 @@ public class GameDataManager : MonoBehaviour
         PlayerPrefs.SetInt(SESSION_ACTIVE_KEY, 1);
         PlayerPrefs.SetString(SESSION_TEACHER_KEY, teacherName);
         PlayerPrefs.Save();
+        _sessionStudentCodes.Clear();
         if (FirebaseBackend.Instance != null && FirebaseBackend.Instance.IsReady)
             FirebaseBackend.Instance.SetSessionActive(teacherName, true);
         Debug.Log($"[GameData] Session started by teacher: {teacherName}");
@@ -190,7 +194,63 @@ public class GameDataManager : MonoBehaviour
     public void ClearSessionStudents()
     {
         _sessionStudents.Clear();
+        _sessionStudentCodes.Clear();
         Debug.Log("[GameData] Session students cleared");
+    }
+
+    /// <summary>
+    /// Teacher adds a student to the session by last name; returns the code to give to the student.
+    /// </summary>
+    public string AddSessionStudent(string studentLastName)
+    {
+        if (!IsSessionActive() || string.IsNullOrWhiteSpace(studentLastName)) return null;
+        var lastName = studentLastName.Trim();
+        if (_sessionStudentCodes.Exists(p => p.lastName.Equals(lastName, System.StringComparison.OrdinalIgnoreCase)))
+            return null;
+        var code = GenerateSessionStudentCode();
+        _sessionStudentCodes.Add((lastName, code));
+        Debug.Log($"[GameData] Session student added: {lastName} Code: {code}");
+        return code;
+    }
+
+    private static string GenerateSessionStudentCode()
+    {
+        var s = new char[SESSION_STUDENT_CODE_LENGTH];
+        for (int i = 0; i < SESSION_STUDENT_CODE_LENGTH; i++)
+            s[i] = SESSION_CODE_CHARS[UnityEngine.Random.Range(0, SESSION_CODE_CHARS.Length)];
+        return new string(s);
+    }
+
+    /// <summary>
+    /// Get session students (last name + code) for teacher display.
+    /// </summary>
+    public List<(string lastName, string code)> GetSessionStudentsWithCodes()
+    {
+        return new List<(string, string)>(_sessionStudentCodes);
+    }
+
+    /// <summary>
+    /// True if any students have been added to the current session (so we require last name + code to join).
+    /// </summary>
+    public bool HasSessionStudentsWithCodes()
+    {
+        return _sessionStudentCodes.Count > 0;
+    }
+
+    /// <summary>
+    /// Check if student last name + code are allowed to join the current session.
+    /// </summary>
+    public bool IsAllowedSessionStudent(string studentLastName, string code)
+    {
+        if (string.IsNullOrWhiteSpace(studentLastName) || string.IsNullOrWhiteSpace(code)) return false;
+        var lastName = studentLastName.Trim();
+        var c = (code ?? "").Trim();
+        foreach (var p in _sessionStudentCodes)
+        {
+            if (p.lastName.Equals(lastName, System.StringComparison.OrdinalIgnoreCase) && p.code == c)
+                return true;
+        }
+        return false;
     }
     // ==================== END SESSION ENROLLMENT & STUDENT STATS ====================
 
@@ -349,26 +409,53 @@ public class GameDataManager : MonoBehaviour
         _currentPlayer.accuracy = 0;
     }
 
-    // ==================== PRINCIPAL: TEACHER LIST (name:password) ====================
+    // ==================== PRINCIPAL ACCESS (bypass code only) ====================
+
+    /// <summary>True if the given code is the principal bypass code.</summary>
+    public bool IsValidPrincipalCode(string code)
+    {
+        return string.Equals((code ?? "").Trim(), "BYp4$s", System.StringComparison.Ordinal);
+    }
+
+    // ==================== PRINCIPAL: TEACHER LIST (firstName:randomCode) ====================
     private const string TEACHERS_PREF_KEY = "Cogniville_Teachers";
     private const char TEACHERS_SEPARATOR = '|';
     private const char TEACHER_PASS_SEP = ':';
+    private const int TEACHER_CODE_LENGTH = 6;
+    private static readonly char[] CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".ToCharArray();
 
     /// <summary>
-    /// Add a teacher with optional password (principal-only). Stored as "name" or "name:password".
+    /// Add a teacher by first name; generates a random code. Returns the code to give to the teacher.
+    /// Principal-only (call after principal login).
     /// </summary>
-    public void AddTeacher(string teacherName, string password = null)
+    public string AddTeacher(string teacherFirstName)
     {
-        if (string.IsNullOrWhiteSpace(teacherName)) return;
+        return AddTeacher(teacherFirstName, null);
+    }
+
+    /// <summary>
+    /// Add a teacher (second arg ignored; use single-arg overload). Kept for backward compatibility.
+    /// </summary>
+    public string AddTeacher(string teacherFirstName, string ignoredSecondArg)
+    {
+        if (string.IsNullOrWhiteSpace(teacherFirstName)) return null;
         var list = GetTeacherEntries();
-        var name = teacherName.Trim();
-        var pass = (password ?? "").Trim();
-        var entry = string.IsNullOrEmpty(pass) ? name : name + TEACHER_PASS_SEP + pass;
+        var name = teacherFirstName.Trim();
         if (list.Exists(e => GetTeacherNameFromEntry(e).Equals(name, System.StringComparison.OrdinalIgnoreCase)))
-            return;
-        list.Add(entry);
+            return null;
+        var code = GenerateTeacherCode();
+        list.Add(name + TEACHER_PASS_SEP + code);
         SaveTeacherEntries(list);
-        Debug.Log($"[GameDataManager] Teacher added: {name}" + (string.IsNullOrEmpty(pass) ? "" : " (with password)"));
+        Debug.Log($"[GameDataManager] Teacher added: {name} Code: {code}");
+        return code;
+    }
+
+    private static string GenerateTeacherCode()
+    {
+        var s = new char[TEACHER_CODE_LENGTH];
+        for (int i = 0; i < TEACHER_CODE_LENGTH; i++)
+            s[i] = CODE_CHARS[UnityEngine.Random.Range(0, CODE_CHARS.Length)];
+        return new string(s);
     }
 
     /// <summary>
@@ -393,6 +480,18 @@ public class GameDataManager : MonoBehaviour
         foreach (var e in entries)
             names.Add(GetTeacherNameFromEntry(e));
         return names;
+    }
+
+    /// <summary>
+    /// Get teacher entries as (displayName, code) for principal list display.
+    /// </summary>
+    public List<(string name, string code)> GetTeachersWithCodes()
+    {
+        var entries = GetTeacherEntries();
+        var result = new List<(string, string)>();
+        foreach (var e in entries)
+            result.Add((GetTeacherNameFromEntry(e), GetTeacherPasswordFromEntry(e)));
+        return result;
     }
 
     private List<string> GetTeacherEntries()
@@ -429,22 +528,20 @@ public class GameDataManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Check if name + password are allowed. If list is empty, any name is allowed.
-    /// Entries stored as "name:password" require matching password; legacy "name" only requires name.
+    /// Check if teacher first name + code are allowed. Code is the one generated when principal added the teacher.
     /// </summary>
-    public bool IsAllowedTeacher(string teacherName, string password = null)
+    public bool IsAllowedTeacher(string teacherFirstName, string code = null)
     {
         var list = GetTeacherEntries();
-        if (list.Count == 0) return true;
-        var name = (teacherName ?? "").Trim();
-        var pass = (password ?? "").Trim();
+        if (list.Count == 0) return false;
+        var name = (teacherFirstName ?? "").Trim();
+        var enteredCode = (code ?? "").Trim();
         foreach (var entry in list)
         {
             var entryName = GetTeacherNameFromEntry(entry);
             if (!entryName.Equals(name, System.StringComparison.OrdinalIgnoreCase)) continue;
-            var storedPass = GetTeacherPasswordFromEntry(entry);
-            if (string.IsNullOrEmpty(storedPass)) return true;
-            return storedPass == pass;
+            var storedCode = GetTeacherPasswordFromEntry(entry);
+            return storedCode == enteredCode;
         }
         return false;
     }
