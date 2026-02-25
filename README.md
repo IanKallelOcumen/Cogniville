@@ -4,10 +4,11 @@
 
 ## 🌟 Key Features
 
-* **Math-Based Combat:** Turn-based RPG logic where answering questions correctly deals damage, and wrong answers hurt the player. Supports multiple difficulties (Easy/Medium/Hard/Boss) and operation types (, , ).
-* **"Juicy" UI:** Extensive use of procedural animation. Buttons squish, backgrounds wiggle, titles breathe, and screens shake.
+* **Math-Based Combat:** Turn-based RPG logic where answering questions correctly deals damage, and wrong answers hurt the player. Supports multiple difficulties (Easy/Medium/Hard/Boss) and operation types.
+* **"Juicy" UI:** Extensive use of procedural animation. Buttons squish, backgrounds wiggle, titles breathe, and screens shake. All menu buttons share the same look, size, and hover/press feedback.
 * **World Progression:** A saved-data system (`PlayerPrefs`) that locks/unlocks districts of Cogniville. Includes a 3D-style "Book" selection menu and a 2D "World Carousel."
 * **Smooth Transitions:** Custom scene fading and camera panning logic using a custom easing library.
+* **Roles & sessions:** **Principal** (bypass code) adds teachers (first name → code). **Teachers** log in with first name + code and run sessions, adding students by last name (each gets a code). **Students** join a session on the name screen with last name + code when a session is active. Set up for small testing sites (e.g. **50+ students**, **10+ teachers**) on the free Firebase Spark plan.
 
 ## 🛠 Project Requirements
 
@@ -66,6 +67,20 @@ To create the level selector:
 * **`BookSelector.cs`**: Handles the logic for selecting "Chapters" or Modes presented as books. Includes unlock animations (shaking/popping).
 * **`UIFadeIn.cs`**: Simple utility to make panels slide up and fade in when enabled.
 * **`BackButtonHook.cs`**: Automatically binds the Android "Back" button (or Escape key) to the Menu's "Back" function.
+
+### 👤 Login, roles & sessions
+
+* **Principal access:** From the main menu, use **Login** → **Principal or Teacher?** → **Principal**. Enter the **bypass code** (no stored principal code) to open the principal panel. There you add teachers by **first name**; each gets a **random code** to log in.
+* **Teacher login:** **Login** → **Teacher** → enter **first name** and **code** (from the principal). Successful login opens the **Session** panel. Teacher can add **students** by **last name**; each student gets a **code** to join the session.
+* **Student join:** On **Panel Name** (Play flow), when a session is active and the teacher has added students, the student enters **last name** and **code** to join; otherwise a single name field is used. All input fields use the same size and autocapitalization (Name).
+* **`GameDataManager.cs`**: Holds principal bypass validation, teacher list (first name + code), session state, and session students (last name + code). **`PrincipalPanel.cs`** and **`SessionPanel.cs`** drive the principal and session UI.
+
+### 🎨 UI consistency & tools
+
+* **Global button styling:** All buttons get the same size (260×56), sprite, hover (UIFloat 1.1), and press feedback (ButtonFeedback scale 1) at runtime. Principal panel and login panels are normalized to match.
+* **Large text:** Inputs and button labels use font size 32 / 30; placeholders use normal style (no bold/italic). Panel Login error text is created at runtime if missing so validation messages show.
+* **Panel Login:** "Principal or Teacher?" is shown first (no teacher form flash); background stays visible when switching to login. LoginButton is resolved under Panel Login first to avoid wrong binding with duplicate names.
+* **Editor tools (Tools → Cogniville):** **Setup Student Join UI** (Panel Name + Session), **Check for conflicting names in hierarchy** (duplicate names that can break Find() / assigned graphics), **Fix Missing Script References**, **Apply standard UI (Play look)**, and font/button scale helpers.
 
 ### ⚙️ Utilities
 

@@ -8,7 +8,7 @@ using UnityEngine;
 public class FirebaseConfig : ScriptableObject
 {
     [Header("Firebase Project (Spark plan)")]
-    [Tooltip("From Firebase Console > Project Settings > General > Your apps > Web API Key")]
+    [Tooltip("From Firebase Console > Project Settings > General > Your apps > Web API Key. Restrict key in Console (e.g. by HTTP referrer or app bundle ID) to reduce abuse.")]
     public string apiKey = "";
     [Tooltip("From Firebase Console > Project Settings > General > Project ID")]
     public string projectId = "";

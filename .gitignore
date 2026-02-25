@@ -23,6 +23,13 @@ Logs/
 Assets/debug-*.log
 Assets/debug-*.log.meta
 
+# Firebase config (contains API keys; use FirebaseConfig.asset or env for shared config)
+google-services.json
+**/google-services.json
+
+# Unzipped Firebase Unity SDK (large; unzip from firebase_unity_sdk_13.8.0.zip into project root)
+FirebaseSDK/
+
 # OS junk
 .DS_Store
 Thumbs.db
