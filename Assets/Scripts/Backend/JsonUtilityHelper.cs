@@ -52,22 +52,10 @@ public static class JsonUtilityHelper
                json.IndexOf(": true", trueIdx, StringComparison.Ordinal) >= 0;
     }
 
-    /// <summary>Escape for JSON string value (backslash, quotes, newlines, tabs, control chars).</summary>
     public static string Escape(string s)
     {
         if (string.IsNullOrEmpty(s)) return "";
-        var sb = new System.Text.StringBuilder(s.Length);
-        foreach (var c in s)
-        {
-            if (c == '\\') sb.Append("\\\\");
-            else if (c == '"') sb.Append("\\\"");
-            else if (c == '\n') sb.Append("\\n");
-            else if (c == '\r') sb.Append("\\r");
-            else if (c == '\t') sb.Append("\\t");
-            else if (char.IsControl(c)) sb.Append("\\u").Append(((int)c).ToString("x4"));
-            else sb.Append(c);
-        }
-        return sb.ToString();
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
     }
 
     /// <summary>Parse runQuery response into LeaderboardEntry list.</summary>

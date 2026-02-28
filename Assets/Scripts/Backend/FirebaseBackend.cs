@@ -21,9 +21,6 @@ public class FirebaseBackend : MonoBehaviour
     const string FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects";
     const string LEADERBOARD_COLLECTION = "leaderboard";
     const string SESSIONS_COLLECTION = "sessions";
-    const int RequestTimeoutSeconds = 15;
-    const int MaxStringFieldLength = 200;
-    const int MaxScore = 999999;
 
     void Awake()
     {
@@ -51,32 +48,24 @@ public class FirebaseBackend : MonoBehaviour
         _authSuccess = false;
         var body = "{\"returnSecureToken\":true}";
         var url = AUTH_SIGNUP + "?key=" + config.apiKey;
-        for (int attempt = 0; attempt < 2 && !_authSuccess; attempt++)
+        using (var req = new UnityWebRequest(url, "POST"))
         {
-            if (attempt > 0) yield return new WaitForSecondsRealtime(1f);
-            using (var req = new UnityWebRequest(url, "POST"))
+            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
+            yield return req.SendWebRequest();
+            if (req.result == UnityWebRequest.Result.Success)
             {
-                req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
-                req.downloadHandler = new DownloadHandlerBuffer();
-                req.SetRequestHeader("Content-Type", "application/json");
-                req.timeout = RequestTimeoutSeconds;
-                yield return req.SendWebRequest();
-                if (req.result == UnityWebRequest.Result.Success)
-                {
-                    var json = req.downloadHandler.text;
-                    _idToken = JsonUtilityHelper.GetString(json, "idToken");
-                    _authSuccess = !string.IsNullOrEmpty(_idToken);
-                    if (_authSuccess) { Debug.Log("[Firebase] Anonymous auth OK"); break; }
-                    Debug.LogWarning("[Firebase] No idToken in response");
-                }
-                else
-                {
-                    var responseBody = req.downloadHandler?.text ?? "";
-                    Debug.LogWarning("[Firebase] Auth failed (attempt " + (attempt + 1) + "): " + req.error + (string.IsNullOrEmpty(responseBody) ? "" : " | " + responseBody));
-                }
+                var json = req.downloadHandler.text;
+                _idToken = JsonUtilityHelper.GetString(json, "idToken");
+                _authSuccess = !string.IsNullOrEmpty(_idToken);
+                if (_authSuccess) Debug.Log("[Firebase] Anonymous auth OK");
+                else Debug.LogWarning("[Firebase] No idToken in response");
             }
+            else
+                Debug.LogWarning("[Firebase] Auth failed: " + req.error);
+            _authDone = true;
         }
-        _authDone = true;
     }
 
     string FirestoreUrl(string path) =>
@@ -89,16 +78,9 @@ public class FirebaseBackend : MonoBehaviour
             req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
-        req.timeout = RequestTimeoutSeconds;
         if (!string.IsNullOrEmpty(_idToken))
             req.SetRequestHeader("Authorization", "Bearer " + _idToken);
         return req;
-    }
-
-    static string Truncate(string s, int maxLen)
-    {
-        if (string.IsNullOrEmpty(s)) return "";
-        return s.Length <= maxLen ? s : s.Substring(0, maxLen);
     }
 
     /// <summary>Add a leaderboard entry (playerName, score, teacherName).</summary>
@@ -110,24 +92,18 @@ public class FirebaseBackend : MonoBehaviour
 
     IEnumerator AddLeaderboardEntryRoutine(string playerName, int score, string teacherName, Action<bool> onDone)
     {
-        playerName = Truncate((playerName ?? "").Trim(), MaxStringFieldLength);
-        teacherName = Truncate((teacherName ?? "").Trim(), MaxStringFieldLength);
-        score = Mathf.Clamp(score, 0, MaxScore);
         var docId = System.Guid.NewGuid().ToString("N");
         var body = "{\"fields\":{" +
-            "\"playerName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(playerName) + "\"}," +
+            "\"playerName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(playerName ?? "") + "\"}," +
             "\"score\":{\"integerValue\":\"" + score + "\"}," +
-            "\"teacherName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(teacherName) + "\"}," +
+            "\"teacherName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(teacherName ?? "") + "\"}," +
             "\"timestamp\":{\"timestampValue\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\"}" +
             "}}";
         var url = FirestoreUrl(LEADERBOARD_COLLECTION) + "?documentId=" + docId;
         using (var req = Request(url, "POST", body))
         {
             yield return req.SendWebRequest();
-            var ok = req.result == UnityWebRequest.Result.Success;
-            if (!ok && (req.responseCode == 400 || req.responseCode == 403))
-                Debug.LogWarning("[Firebase] Leaderboard write failed: " + req.responseCode + " " + (req.downloadHandler?.text ?? ""));
-            onDone?.Invoke(ok);
+            onDone?.Invoke(req.result == UnityWebRequest.Result.Success);
         }
     }
 
@@ -144,20 +120,17 @@ public class FirebaseBackend : MonoBehaviour
 
     IEnumerator GetLeaderboardRoutine(int topCount, Action<List<GameDataManager.LeaderboardEntry>> onDone)
     {
-        topCount = Mathf.Clamp(topCount, 1, 50);
         var runQueryUrl = FirestoreUrl(":runQuery");
         var queryBody = "{\"structuredQuery\":{" +
             "\"from\":[{\"collectionId\":\"" + LEADERBOARD_COLLECTION + "\"}]," +
             "\"orderBy\":[{\"field\":{\"fieldPath\":\"score\"},\"direction\":\"DESCENDING\"}]," +
-            "\"limit\":" + topCount + "}}";
+            "\"limit\":" + Mathf.Clamp(topCount, 1, 50) + "}}";
         using (var req = Request(runQueryUrl, "POST", queryBody))
         {
             yield return req.SendWebRequest();
             var list = new List<GameDataManager.LeaderboardEntry>();
             if (req.result == UnityWebRequest.Result.Success)
-                list = JsonUtilityHelper.ParseLeaderboardQuery(req.downloadHandler?.text ?? "");
-            else if (req.responseCode == 403 || req.responseCode == 401)
-                Debug.LogWarning("[Firebase] Leaderboard read failed: " + req.responseCode + " " + (req.downloadHandler?.text ?? ""));
+                list = JsonUtilityHelper.ParseLeaderboardQuery(req.downloadHandler.text);
             onDone?.Invoke(list);
         }
     }
@@ -171,23 +144,19 @@ public class FirebaseBackend : MonoBehaviour
 
     IEnumerator SetSessionRoutine(string teacherName, bool active, Action<bool> onDone)
     {
-        teacherName = Truncate((teacherName ?? "").Trim(), MaxStringFieldLength);
         var docId = SanitizeDocId(teacherName);
         if (string.IsNullOrEmpty(docId)) docId = "default";
         var path = $"{SESSIONS_COLLECTION}/{docId}";
         var url = FirestoreUrl(path);
         var body = "{\"fields\":{" +
-            "\"teacherName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(teacherName) + "\"}," +
+            "\"teacherName\":{\"stringValue\":\"" + JsonUtilityHelper.Escape(teacherName ?? "") + "\"}," +
             "\"isActive\":{\"booleanValue\":" + (active ? "true" : "false") + "}," +
             "\"updatedAt\":{\"timestampValue\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\"}" +
             "}}";
         using (var req = Request(url, "PATCH", body))
         {
             yield return req.SendWebRequest();
-            var ok = req.result == UnityWebRequest.Result.Success;
-            if (!ok && (req.responseCode == 400 || req.responseCode == 403))
-                Debug.LogWarning("[Firebase] Session write failed: " + req.responseCode + " " + (req.downloadHandler?.text ?? ""));
-            onDone?.Invoke(ok);
+            onDone?.Invoke(req.result == UnityWebRequest.Result.Success);
         }
     }
 
@@ -209,9 +178,7 @@ public class FirebaseBackend : MonoBehaviour
             yield return req.SendWebRequest();
             var active = false;
             if (req.result == UnityWebRequest.Result.Success)
-                active = JsonUtilityHelper.GetFirestoreBool(req.downloadHandler?.text ?? "", "isActive");
-            else if (req.responseCode == 403 || req.responseCode == 401)
-                Debug.LogWarning("[Firebase] Session read failed: " + req.responseCode + " " + (req.downloadHandler?.text ?? ""));
+                active = JsonUtilityHelper.GetFirestoreBool(req.downloadHandler.text, "isActive");
             onDone?.Invoke(active);
         }
     }

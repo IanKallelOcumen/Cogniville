@@ -182,11 +182,12 @@ public class MainMenuController : MonoBehaviour
     
     public void OnLogin()
     {
+        if (!panelLogin) panelLogin = GameObject.Find(namePanelLogin) ?? FindGameObjectByNameIncludingInactive(namePanelLogin);
+        if (!panelLogin) { Err("panelLogin is NULL."); return; }
         // From main menu: open Panel Login and show "Principal or Teacher?"
         if (_current != panelLogin)
         {
             Log("OnLogin from main -> open Panel Login (Principal or Teacher?)");
-            if (!panelLogin) { Err("panelLogin is NULL."); return; }
             StartFade(_current, panelLogin);
             return;
         }
@@ -228,6 +229,15 @@ public class MainMenuController : MonoBehaviour
         StartFade(_current, panelSession);
     }
     
+    /// <summary>Go directly to BookSelect (e.g. from teacher Session panel). Same destination as student after entering name+code.</summary>
+    public void OnGoToBookSelect()
+    {
+        Log("OnGoToBookSelect -> Fade to PanelBookSelect");
+        if (!panelBookSelect) { Err("panelBookSelect is NULL."); return; }
+        if (_current == panelBookSelect) return;
+        StartFade(_current, panelBookSelect);
+    }
+
     public void OnContinueFromName()
     {
         string lastName = GetNameFromPanel(panelName);
@@ -350,12 +360,13 @@ public class MainMenuController : MonoBehaviour
         go.SetActive(false);
     }
 
-    /// <summary>Make teacher form inputs consistent: same font size and style (no bold/italic).</summary>
+    /// <summary>Make teacher form inputs consistent with principal login: same font size, style, and labels (First name + Code).</summary>
     void NormalizeLoginInputStyles()
     {
         if (panelLogin == null) return;
         var inputs = panelLogin.GetComponentsInChildren<TMP_InputField>(true);
         const int fontSize = 32;
+        int index = 0;
         foreach (var input in inputs)
         {
             if (input == null) continue;
@@ -370,8 +381,16 @@ public class MainMenuController : MonoBehaviour
             if (input.placeholder != null)
             {
                 var ph = input.placeholder as TMPro.TMP_Text ?? input.placeholder.GetComponent<TMPro.TMP_Text>();
-                if (ph != null) { ph.fontSize = fontSize; ph.fontStyle = TMPro.FontStyles.Normal; ph.color = new Color(0.5f, 0.5f, 0.5f, 0.5f); }
+                if (ph != null)
+                {
+                    ph.fontSize = fontSize;
+                    ph.fontStyle = TMPro.FontStyles.Normal;
+                    ph.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+                    if (index == 0) ph.text = "First name";
+                    else if (index == 1) ph.text = "Code";
+                }
             }
+            index++;
         }
     }
 
@@ -1176,15 +1195,15 @@ public class MainMenuController : MonoBehaviour
     
     void AutoWire()
     {
-        if (!panelMain)        panelMain        = GameObject.Find(namePanelMain);
-        if (!panelAbout)       panelAbout       = GameObject.Find(namePanelAbout);
-        if (!panelLeaderboard) panelLeaderboard = GameObject.Find(namePanelLeaderboard);
-        if (!panelBookSelect)  panelBookSelect  = GameObject.Find(namePanelBookSelect);
-        if (!panelLogin)       panelLogin       = GameObject.Find(namePanelLogin);
-        if (!panelName)        panelName        = GameObject.Find(namePanelName);
-        if (!panelSession)     panelSession     = GameObject.Find(namePanelSession);
-        if (!panelPrincipal)   panelPrincipal   = GameObject.Find(namePanelPrincipal);
-        if (!resultsScreen)    resultsScreen    = GameObject.Find(nameResultsScreen);
+        if (!panelMain)        panelMain        = GameObject.Find(namePanelMain) ?? FindGameObjectByNameIncludingInactive(namePanelMain);
+        if (!panelAbout)       panelAbout       = GameObject.Find(namePanelAbout) ?? FindGameObjectByNameIncludingInactive(namePanelAbout);
+        if (!panelLeaderboard) panelLeaderboard = GameObject.Find(namePanelLeaderboard) ?? FindGameObjectByNameIncludingInactive(namePanelLeaderboard);
+        if (!panelBookSelect)  panelBookSelect  = GameObject.Find(namePanelBookSelect) ?? FindGameObjectByNameIncludingInactive(namePanelBookSelect);
+        if (!panelLogin)       panelLogin       = GameObject.Find(namePanelLogin) ?? FindGameObjectByNameIncludingInactive(namePanelLogin);
+        if (!panelName)        panelName        = GameObject.Find(namePanelName) ?? FindGameObjectByNameIncludingInactive(namePanelName);
+        if (!panelSession)    panelSession     = GameObject.Find(namePanelSession) ?? FindGameObjectByNameIncludingInactive(namePanelSession);
+        if (!panelPrincipal)  panelPrincipal   = GameObject.Find(namePanelPrincipal) ?? FindGameObjectByNameIncludingInactive(namePanelPrincipal);
+        if (!resultsScreen)   resultsScreen    = GameObject.Find(nameResultsScreen) ?? FindGameObjectByNameIncludingInactive(nameResultsScreen);
 
         TryBind(nameBtnPlay, OnPlay);
         TryBind(nameBtnAbout, OnAbout);
@@ -1193,26 +1212,27 @@ public class MainMenuController : MonoBehaviour
         TryBind(nameBtnAboutBack, OnBack);
         TryBind(nameBtnLeaderboardBack, OnBack);
         TryBind(nameBtnBackGeneric, OnBack);
-        
-        // Wire login button (prefer under PanelLogin to avoid binding wrong button if duplicate names exist)
-        GameObject loginBtn = null;
-        if (panelLogin != null)
+
+        TryBind("LoginButton", OnLogin);
+        TryBind("Login", OnLogin);
+
+        // Double-check: wire EVERY button under Panel Main or Panel Login whose name contains "login" (main menu + teacher form)
+        var allButtons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var btn in allButtons)
         {
-            var t = panelLogin.transform.Find("LoginButton");
-            if (t != null) loginBtn = t.gameObject;
-        }
-        if (loginBtn == null) loginBtn = GameObject.Find("LoginButton") ?? FindGameObjectByNameIncludingInactive("LoginButton");
-        if (loginBtn)
-        {
-            var btn = loginBtn.GetComponent<Button>();
-            if (btn)
+            if (btn == null) continue;
+            string n = (btn.gameObject.name ?? "").ToLowerInvariant();
+            if (!n.Contains("login")) continue;
+            bool onMain = panelMain != null && btn.transform.IsChildOf(panelMain.transform);
+            bool onLoginPanel = panelLogin != null && btn.transform.IsChildOf(panelLogin.transform);
+            if (onMain || onLoginPanel)
             {
                 btn.onClick.RemoveListener(OnLogin);
                 btn.onClick.AddListener(OnLogin);
-                Log("Wired LoginButton -> OnLogin");
+                Log("Bound " + btn.gameObject.name + " (Login) -> OnLogin");
             }
         }
-        
+
         // Wire context-specific buttons
         TryBind("ContinueButton", OnContinueFromName);
         TryBind("EnterButton", OnContinueFromName); // For PanelName

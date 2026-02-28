@@ -17,6 +17,11 @@ public class SessionPanel : MonoBehaviour
     public TMP_InputField studentLastNameInput;
     public Button addStudentButton;
     public TextMeshProUGUI sessionStudentsListText;
+    [Header("Generated code display (shows code to give student after adding)")]
+    public TextMeshProUGUI generatedCodeDisplayText;
+    [Header("Navigation (same as student: Play / BookSelect)")]
+    public Button playButton;
+    public Button bookSelectButton;
 
     private void OnEnable()
     {
@@ -24,6 +29,8 @@ public class SessionPanel : MonoBehaviour
             AutoWireFields();
         if (!studentLastNameInput || !addStudentButton || !sessionStudentsListText)
             AutoWireStudentFields();
+        if (!generatedCodeDisplayText || !playButton || !bookSelectButton)
+            AutoWireGeneratedCodeAndNav();
         RefreshSessionDisplay();
         RefreshSessionStudentsList();
         if (endSessionButton)
@@ -35,6 +42,23 @@ public class SessionPanel : MonoBehaviour
         {
             addStudentButton.onClick.RemoveListener(OnAddSessionStudent);
             addStudentButton.onClick.AddListener(OnAddSessionStudent);
+        }
+        WireNavigationButtons();
+    }
+
+    void WireNavigationButtons()
+    {
+        var menu = Object.FindFirstObjectByType<MainMenuController>();
+        if (!menu) return;
+        if (playButton)
+        {
+            playButton.onClick.RemoveListener(menu.OnPlay);
+            playButton.onClick.AddListener(menu.OnPlay);
+        }
+        if (bookSelectButton)
+        {
+            bookSelectButton.onClick.RemoveListener(menu.OnGoToBookSelect);
+            bookSelectButton.onClick.AddListener(menu.OnGoToBookSelect);
         }
     }
 
@@ -55,6 +79,7 @@ public class SessionPanel : MonoBehaviour
         if (endSessionButton) endSessionButton.interactable = active;
         if (addStudentButton) addStudentButton.interactable = active;
         if (studentLastNameInput) studentLastNameInput.interactable = active;
+        if (generatedCodeDisplayText && !active) generatedCodeDisplayText.text = "";
     }
 
     public void OnAddSessionStudent()
@@ -76,6 +101,8 @@ public class SessionPanel : MonoBehaviour
         RefreshSessionStudentsList();
         if (sessionStudentsListText)
             sessionStudentsListText.text += "\n\nGive this code to " + lastName.Trim() + ": " + code;
+        if (generatedCodeDisplayText)
+            generatedCodeDisplayText.text = "Code for " + lastName.Trim() + ": " + code;
     }
 
     private void RefreshSessionStudentsList()
@@ -145,6 +172,46 @@ public class SessionPanel : MonoBehaviour
                 foreach (var tmp in all)
                     if (tmp.name.ToLowerInvariant().Contains("student") && tmp != teacherNameText && tmp != sessionStatusText)
                     { sessionStudentsListText = tmp; break; }
+            }
+        }
+    }
+
+    private void AutoWireGeneratedCodeAndNav()
+    {
+        if (!generatedCodeDisplayText)
+        {
+            var t = transform.Find("GeneratedCodeDisplayText");
+            if (t) generatedCodeDisplayText = t.GetComponent<TextMeshProUGUI>();
+            if (!generatedCodeDisplayText)
+            {
+                var all = GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (var tmp in all)
+                    if (tmp != null && (tmp.name ?? "").ToLowerInvariant().Contains("generatedcode"))
+                    { generatedCodeDisplayText = tmp; break; }
+            }
+        }
+        if (!playButton)
+        {
+            var t = transform.Find("PlayButton");
+            if (t) playButton = t.GetComponent<Button>();
+            if (!playButton)
+            {
+                var btns = GetComponentsInChildren<Button>(true);
+                foreach (var b in btns)
+                    if (b != null && (b.name ?? "").ToLowerInvariant() == "playbutton")
+                    { playButton = b; break; }
+            }
+        }
+        if (!bookSelectButton)
+        {
+            var t = transform.Find("BookSelectButton");
+            if (t) bookSelectButton = t.GetComponent<Button>();
+            if (!bookSelectButton)
+            {
+                var btns = GetComponentsInChildren<Button>(true);
+                foreach (var b in btns)
+                    if (b != null && (b.name ?? "").ToLowerInvariant().Contains("bookselect"))
+                    { bookSelectButton = b; break; }
             }
         }
     }

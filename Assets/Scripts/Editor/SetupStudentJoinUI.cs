@@ -17,6 +17,9 @@ public static class SetupStudentJoinUI
     const string StudentLastNameInputName = "StudentLastNameInput";
     const string AddStudentButtonName = "AddStudentButton";
     const string SessionStudentsListTextName = "SessionStudentsListText";
+    const string GeneratedCodeDisplayTextName = "GeneratedCodeDisplayText";
+    const string PlayButtonName = "PlayButton";
+    const string BookSelectButtonName = "BookSelectButton";
 
     [MenuItem("Tools/Cogniville/Setup Student Join UI (Panel Name + Session)")]
     public static void Run()
@@ -51,7 +54,7 @@ public static class SetupStudentJoinUI
             Debug.Log("[Cogniville] Setup Student Join UI: " + changes + " change(s). Save the scene to keep them.");
         }
         EditorUtility.DisplayDialog("Cogniville", changes > 0
-            ? "Student Join UI setup complete.\n• Panel Name: last name + code inputs\n• Panel Session: add-student UI\nSave the scene to keep changes."
+            ? "Student Join UI setup complete.\n• Panel Name: last name + code inputs\n• Panel Session: add-student UI, generated code display, Play & BookSelect buttons\nSave the scene to keep changes."
             : "Nothing to change. Panel Name and Panel Session already have the required UI.", "OK");
     }
 
@@ -109,6 +112,9 @@ public static class SetupStudentJoinUI
         bool needInput = sessionPanel.studentLastNameInput == null;
         bool needButton = sessionPanel.addStudentButton == null;
         bool needListText = sessionPanel.sessionStudentsListText == null;
+        bool needGeneratedCode = sessionPanel.generatedCodeDisplayText == null;
+        bool needPlayBtn = sessionPanel.playButton == null;
+        bool needBookSelectBtn = sessionPanel.bookSelectButton == null;
 
         if (needInput)
         {
@@ -202,6 +208,56 @@ public static class SetupStudentJoinUI
                     }
                     count++;
                 }
+            }
+        }
+
+        if (needGeneratedCode)
+        {
+            var existing = panelSession.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (existing != null)
+            {
+                var go = Object.Instantiate(existing.gameObject, panelSession.transform);
+                go.name = GeneratedCodeDisplayTextName;
+                Undo.RegisterCreatedObjectUndo(go, "Add GeneratedCodeDisplayText");
+                var tmp = go.GetComponent<TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    sessionPanel.generatedCodeDisplayText = tmp;
+                    Undo.RecordObject(tmp, "Text"); tmp.text = "";
+                }
+                count++;
+            }
+        }
+
+        if (needPlayBtn)
+        {
+            var existing = panelSession.GetComponentInChildren<Button>(true);
+            if (existing != null)
+            {
+                var go = Object.Instantiate(existing.gameObject, panelSession.transform);
+                go.name = PlayButtonName;
+                Undo.RegisterCreatedObjectUndo(go, "Add PlayButton");
+                var btn = go.GetComponent<Button>();
+                if (btn != null) sessionPanel.playButton = btn;
+                var label = go.GetComponentInChildren<TMP_Text>(true);
+                if (label != null) { Undo.RecordObject(label, "Label"); label.text = "Play"; }
+                count++;
+            }
+        }
+
+        if (needBookSelectBtn)
+        {
+            var existing = panelSession.GetComponentInChildren<Button>(true);
+            if (existing != null)
+            {
+                var go = Object.Instantiate(existing.gameObject, panelSession.transform);
+                go.name = BookSelectButtonName;
+                Undo.RegisterCreatedObjectUndo(go, "Add BookSelectButton");
+                var btn = go.GetComponent<Button>();
+                if (btn != null) sessionPanel.bookSelectButton = btn;
+                var label = go.GetComponentInChildren<TMP_Text>(true);
+                if (label != null) { Undo.RecordObject(label, "Label"); label.text = "Book Select"; }
+                count++;
             }
         }
 

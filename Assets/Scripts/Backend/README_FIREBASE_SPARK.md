@@ -39,35 +39,17 @@ If you prefer the official Firebase Unity SDK (e.g. for Analytics or other SDK f
    - Click **Create database**
    - Start in **production mode** (we use Auth token; rules below will allow reads/writes for authenticated users)
    - Pick a region and enable
-5. In **Firestore > Rules**, paste the rules from **`Assets/Scripts/Backend/firestore.rules`** (or the block below). They allow only authenticated users, **leaderboard: read + create only** (no update/delete), **sessions: read/write** with field validation:
+5. In **Firestore > Rules**, set rules so only authenticated users can read/write:
 
 ```text
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /leaderboard/{entry} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasAll(['playerName', 'score', 'teacherName', 'timestamp'])
-        && request.resource.data.playerName is string
-        && request.resource.data.playerName.size() <= 200
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0
-        && request.resource.data.score <= 999999
-        && request.resource.data.teacherName is string
-        && request.resource.data.teacherName.size() <= 200
-        && request.resource.data.timestamp is timestamp;
-      allow update, delete: if false;
+      allow read, create: if request.auth != null;
     }
     match /sessions/{session} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && request.resource.data.keys().hasAll(['teacherName', 'isActive', 'updatedAt'])
-        && request.resource.data.teacherName is string
-        && request.resource.data.teacherName.size() <= 200
-        && request.resource.data.isActive is bool
-        && request.resource.data.updatedAt is timestamp;
-      allow delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
   }
 }
@@ -121,21 +103,7 @@ No extra wiring is required once **FirebaseBackend** is in the scene and config 
 | Teacher sessions  | `sessions`           | One doc per teacher; `isActive` |
 
 - **Auth**: Anonymous (no email). One anonymous user per device; token used for Firestore.
-- **Spark limits**: 50K reads / 20K writes per day; 1 GiB storage. Enough for a small/medium class.
-
----
-
-## 3.1 Supported scale (small testing site)
-
-The app and Spark plan are set up for a **small testing site** with:
-
-| Role    | Typical scale | Notes |
-|---------|----------------|--------|
-| Teachers | 10+ | Principal adds by first name; each gets a code. Stored in PlayerPrefs; session state in Firestore. |
-| Students | 50+ | Students join sessions with last name + code (no per-student Firebase Auth). Leaderboard and session writes stay well under Spark limits. |
-| Leaderboard | Top 50 | Leaderboard fetches top 50 entries from Firestore. |
-
-No configuration changes needed for 50+ students and 10+ teachers. If you grow beyond that, monitor Firestore usage in the Firebase Console; Spark quotas are 50K reads / 20K writes per day.
+- **Spark limits**: 50K reads / 20K writes per day; 1 GiB storage. Enough for a **small testing site** (e.g. 50+ students, 10+ teachers).
 
 ---
 
@@ -146,16 +114,7 @@ No configuration changes needed for 50+ students and 10+ teachers. If you grow b
 
 ---
 
-## 5. Security and reliability
-
-- **Firestore rules:** Leaderboard allows only **create** and **read** (no update/delete). Sessions allow read/write with validated field types and sizes (strings ≤ 200 chars, score 0–999999). Copy the full rules from `Assets/Scripts/Backend/firestore.rules` into Firebase Console.
-- **Input validation:** `FirebaseBackend` truncates player/teacher names to 200 characters and clamps score to 0–999999 before sending. JSON escaping covers quotes, newlines, tabs, and control characters.
-- **Auth:** Anonymous auth is retried once on failure. All Firestore requests use a 15s timeout and send the Bearer token.
-- **API key:** The Web API key is used in the client (Unity). In Firebase Console > Project Settings > API key, you can **restrict** the key (e.g. by HTTP referrer for web, or by app bundle ID when building) to reduce abuse. For a small testing site this is optional but recommended for production.
-
----
-
-## 6. Troubleshooting
+## 5. Troubleshooting
 
 - **“Auth failed”**: In Firebase Console, ensure **Anonymous** sign-in is enabled under Authentication.
 - **403 / Permission denied**: Check Firestore rules and that the client uses the Auth token (Bearer).
@@ -163,7 +122,7 @@ No configuration changes needed for 50+ students and 10+ teachers. If you grow b
 
 ---
 
-## 7. Prompt for Gemini (Firebase help)
+## 6. Prompt for Gemini (Firebase help)
 
 Copy and paste the block below when asking Gemini for Firebase-related help so it has full context:
 

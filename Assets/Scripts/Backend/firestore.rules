@@ -1,33 +1,14 @@
 rules_version = '2';
 // Copy these rules into Firebase Console > Firestore Database > Rules
-// Spark plan: authenticated (Anonymous) users only. Leaderboard: create + read only (no update/delete).
+// Spark plan: read/write for authenticated (Anonymous) users only.
+// Suitable for small testing site (e.g. 50+ students, 10+ teachers).
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Leaderboard: anyone authenticated can read; can only create (no update/delete). Validate shape and size.
     match /leaderboard/{entry} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasAll(['playerName', 'score', 'teacherName', 'timestamp'])
-        && request.resource.data.playerName is string
-        && request.resource.data.playerName.size() <= 200
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0
-        && request.resource.data.score <= 999999
-        && request.resource.data.teacherName is string
-        && request.resource.data.teacherName.size() <= 200
-        && request.resource.data.timestamp is timestamp;
-      allow update, delete: if false;
+      allow read, create: if request.auth != null;
     }
-    // Sessions: authenticated users can read/write. On write, validate shape and size.
     match /sessions/{session} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && request.resource.data.keys().hasAll(['teacherName', 'isActive', 'updatedAt'])
-        && request.resource.data.teacherName is string
-        && request.resource.data.teacherName.size() <= 200
-        && request.resource.data.isActive is bool
-        && request.resource.data.updatedAt is timestamp;
-      allow delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
   }
 }

@@ -15,7 +15,7 @@ public static class CheckHierarchyDuplicateNames
         "BackButton", "LoginButton", "LoginBackbutton", "ErrorText", "MessageText",
         "EmailInput", "PasswordInput", "SignupButton", "PrincipalButton",
         "TeacherNameInput", "AddTeacherButton", "TeachersListText",
-        "StudentLastNameInput", "AddStudentButton", "SessionStudentsListText", "EndSessionButton",
+        "StudentLastNameInput", "AddStudentButton", "SessionStudentsListText", "GeneratedCodeDisplayText", "PlayButton", "BookSelectButton", "EndSessionButton",
         "PrincipalLogin", "LoginRoleChoice", "PrincipalCodeInput", "PrincipalLoginInfoText",
         "LeaderboardScrollView", "LeaderboardTitle",
         "ContinueButton", "EnterButton", "SessionButton", "ResultsButton", "HomeButton", "NextButton",
